@@ -33,6 +33,50 @@ ROOT = Path(__file__).resolve().parent.parent
 VIDEOS = ROOT / "videos"
 DEFAULT_FONT = '"Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", sans-serif'
 
+# 主题：改一个词就能换整体配色
+THEMES = {
+    "dark-teal": {
+        "label": "深青（默认）",
+        "bg": "#0a0e13", "ink": "#f4f7fb", "muted": "#8b9bb0",
+        "accent": "#5eead4", "sub_bg": "rgba(6, 10, 16, 0.62)",
+    },
+    "warm-paper": {
+        "label": "暖纸（浅色）",
+        "bg": "#f6f1e7", "ink": "#1f1b16", "muted": "#6b6155",
+        "accent": "#b4531f", "sub_bg": "rgba(255, 250, 240, 0.85)",
+    },
+    "news-red": {
+        "label": "新闻红",
+        "bg": "#101114", "ink": "#ffffff", "muted": "#9aa3ad",
+        "accent": "#e11d48", "sub_bg": "rgba(8, 8, 10, 0.72)",
+    },
+    "mono-ink": {
+        "label": "单色墨",
+        "bg": "#0e0e0e", "ink": "#f2f2f2", "muted": "#8a8a8a",
+        "accent": "#d4d4d4", "sub_bg": "rgba(0, 0, 0, 0.66)",
+    },
+}
+DEFAULT_THEME = "dark-teal"
+
+
+def resolve_theme(name: str = None, overrides: dict = None) -> dict:
+    """返回主题字典，支持覆盖单项颜色。"""
+    preset = THEMES.get(name or DEFAULT_THEME, THEMES[DEFAULT_THEME])
+    t = dict(preset)
+    for k, v in (overrides or {}).items():
+        if k in ("bg", "ink", "muted", "accent", "sub_bg"):
+            t[k] = v
+    return t
+
+
+def _rgba(hex_color: str, alpha: float) -> str:
+    """#rrggbb -> rgba(...)，用于背景光晕。"""
+    h = hex_color.lstrip("#")
+    if len(h) != 6:
+        return f"rgba(94,234,212,{alpha})"
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    return f"rgba({r},{g},{b},{alpha})"
+
 SCRIPT_TPL = """这是一个测试。我想验证三件事：配音能不能生成，画面能不能渲染，最后出来的视频效果到底怎么样。
 """
 
@@ -168,36 +212,36 @@ CSS = """
       * { margin: 0; padding: 0; box-sizing: border-box; }
       html, body {
         width: %(W)dpx; height: %(H)dpx; overflow: hidden;
-        background: #0a0e13; color: #f4f7fb; font-family: %(FONT)s;
+        background: %(BG)s; color: %(INK)s; font-family: %(FONT)s;
       }
       #root {
         position: relative; width: 100%%; height: 100%%;
-        background: radial-gradient(1100px 700px at 50%% 42%%, rgba(94,234,212,0.10), transparent 70%%), #0a0e13;
+        background: radial-gradient(1100px 700px at 50%% 42%%, %(GLOW)s, transparent 70%%), %(BG)s;
       }
       .clip {
         position: absolute; inset: 0; display: flex; flex-direction: column;
         align-items: center; justify-content: center; text-align: center; padding: 0 120px;
       }
-      .kicker { font-size: 30px; letter-spacing: .32em; color: #5eead4; margin-bottom: 34px; }
+      .kicker { font-size: 30px; letter-spacing: .32em; color: %(ACCENT)s; margin-bottom: 34px; }
       h1 { font-size: 120px; font-weight: 700; letter-spacing: -.02em; line-height: 1.12; }
-      .sub { font-size: 40px; color: #8b9bb0; margin-top: 40px; letter-spacing: .04em; }
+      .sub { font-size: 40px; color: %(MUTED)s; margin-top: 40px; letter-spacing: .04em; }
       .rows { display: flex; flex-direction: column; gap: 44px; }
       .row { display: flex; align-items: center; gap: 32px; font-size: 58px; font-weight: 500; }
-      .row .mark { font-size: 50px; color: #5eead4; flex: none; }
-      .quote { font-size: 64px; line-height: 1.5; max-width: 1500px; color: #e6edf6; }
-      .accent { color: #5eead4; }
+      .row .mark { font-size: 50px; color: %(ACCENT)s; flex: none; }
+      .quote { font-size: 64px; line-height: 1.5; max-width: 1500px; color: %(INK)s; }
+      .accent { color: %(ACCENT)s; }
       .figwrap { display: flex; flex-direction: column; align-items: center; gap: 26px; padding-bottom: 150px; }
       .fig { max-width: 1420px; max-height: 680px; object-fit: contain; border-radius: 18px; }
-      .figcap { font-size: 38px; color: #8b9bb0; letter-spacing: .02em; }
+      .figcap { font-size: 38px; color: %(MUTED)s; letter-spacing: .02em; }
       .vid { max-width: 1620px; max-height: 860px; border-radius: 18px; }
       .subs { position: absolute; left: 0; right: 0; bottom: 84px; z-index: 10; text-align: center; }
       .cue {
         position: absolute; left: 50%%; transform: translateX(-50%%); bottom: 0;
         max-width: 1500px; font-size: 40px; line-height: 1.45; font-weight: 500;
-        color: #fff; opacity: 0;
-        text-shadow: 0 2px 18px rgba(0,0,0,0.85);
+        color: %(INK)s; opacity: 0;
+        text-shadow: 0 2px 18px rgba(0,0,0,0.55);
         padding: 8px 26px; border-radius: 12px;
-        background: rgba(6, 10, 16, 0.62);
+        background: %(SUB_BG)s;
       }
 """
 
@@ -325,7 +369,8 @@ def subs_timeline(cues) -> list[str]:
     return out
 
 
-def build_html(scenes, bounds, audio_rel, total, width, height, cues=None, media_url=None):
+def build_html(scenes, bounds, audio_rel, total, width, height, cues=None, media_url=None, theme=None):
+    theme = theme or resolve_theme()
     starts = [0.0] + bounds
     ends = bounds + [total]
     sections, tl = [], []
@@ -404,7 +449,12 @@ def build_html(scenes, bounds, audio_rel, total, width, height, cues=None, media
             f'      <section id="{sid}" class="clip" data-start="{s:.2f}" data-duration="{e-s:.2f}">\n'
             f'{body}\n      </section>')
 
-    css = CSS % {"W": width, "H": height, "FONT": DEFAULT_FONT}
+    css = CSS % {
+        "W": width, "H": height, "FONT": DEFAULT_FONT,
+        "BG": theme["bg"], "INK": theme["ink"], "MUTED": theme["muted"],
+        "ACCENT": theme["accent"], "SUB_BG": theme["sub_bg"],
+        "GLOW": _rgba(theme["accent"], 0.10),
+    }
     sub_layer = subs_html(cues, total) if cues else ""
     sub_js = "\n".join(subs_timeline(cues)) if cues else ""
     return f"""<!doctype html>
@@ -459,11 +509,31 @@ def cmd_build(slug: str, args) -> None:
     script = (d / "script.txt").read_text(encoding="utf-8").strip()
     cfg = json.loads((d / "scenes.json").read_text(encoding="utf-8"))
     scenes = cfg["scenes"]
-    voice = args.voice or cfg.get("voice", "zh-CN-XiaoxiaoNeural")
-    rate = args.rate or cfg.get("rate", "+0%")
 
-    engine = args.engine or cfg.get("engine", "edge")
-    pack = args.voice_pack or cfg.get("voice_pack")
+    # project.json 提供默认值，命令行参数优先
+    proj = {}
+    pj = d / "project.json"
+    if pj.exists():
+        try:
+            proj = json.loads(pj.read_text(encoding="utf-8"))
+        except Exception:
+            proj = {}
+
+    def pick(*vals, default=None):
+        for v in vals:
+            if v not in (None, "", []):
+                return v
+        return default
+
+    voice = pick(args.voice, cfg.get("voice"), proj.get("voice"), default="zh-CN-XiaoxiaoNeural")
+    rate = pick(args.rate, cfg.get("rate"), proj.get("rate"), default="+0%")
+    engine = pick(args.engine, cfg.get("engine"), proj.get("engine"), default="edge")
+    pack = pick(args.voice_pack, cfg.get("voice_pack"), proj.get("voice_pack"))
+    theme_name = pick(args.theme, cfg.get("theme"), proj.get("theme"), default=DEFAULT_THEME)
+    theme = resolve_theme(theme_name, proj.get("theme_overrides"))
+    width = args.width or proj.get("width") or 1920
+    height = args.height or proj.get("height") or 1080
+
     audio = Path(args.audio) if args.audio else None
 
     if engine == "indextts" and not audio:
@@ -535,15 +605,16 @@ def cmd_build(slug: str, args) -> None:
             kept.append(c)
         cues = kept
     (ROOT / "index.html").write_text(
-        build_html(scenes, bounds, rel, total, args.width, args.height, cues, media_url), encoding="utf-8")
-    print(f"[3/4] index.html  {len(scenes)} 个镜头" + (f" + {len(cues)} 条字幕" if cues else ""))
+        build_html(scenes, bounds, rel, total, width, height, cues, media_url, theme), encoding="utf-8")
+    print(f"[3/4] index.html  {len(scenes)} 个镜头" + (f" + {len(cues)} 条字幕" if cues else "")
+          + f"  主题 {theme_name}")
 
     if args.render:
         npx = shutil.which("npx") or "npx.cmd"
         subprocess.run([npx, "--yes", "hyperframes@0.9.0", "check", "."], cwd=ROOT)
         out = d / "render.mp4"
         subprocess.run([npx, "--yes", "hyperframes@0.9.0", "render", ".",
-                        "-o", str(out), "-q", "draft", "-w", "2"], cwd=ROOT)
+                        "-o", str(out), "-q", args.quality, "-w", "2"], cwd=ROOT)
         print(f"[4/4] 成片 -> videos/{slug}/render.mp4")
     else:
         print(f"[4/4] 跳过渲染（加 --render）")
@@ -560,11 +631,14 @@ def main() -> None:
     ap.add_argument("--engine", choices=["edge", "indextts"],
                     help="配音引擎：edge（默认，2 秒）或 indextts（克隆音色，约 2 分钟）")
     ap.add_argument("--voice-pack", help="声音库里的音色名（IndexTTS2 用），见 tools/voice.py list")
+    ap.add_argument("--theme", help="主题预设：dark-teal / warm-paper / news-red / mono-ink")
     ap.add_argument("--transcribe", action="store_true",
                     help="先用 FunASR 转写，时间轴按句子边界对齐（需要 indextts 环境）")
     ap.add_argument("--subtitles", action="store_true",
                     help="用转写结果生成底部字幕轨（需要 transcript.json）")
     ap.add_argument("--render", action="store_true")
+    ap.add_argument("--quality", choices=["draft", "looks", "delivery"], default="draft",
+                    help="渲染画质：draft 快 / looks 默认 / delivery 最好")
     ap.add_argument("--width", type=int, default=1920)
     ap.add_argument("--height", type=int, default=1080)
     args = ap.parse_args()

@@ -1,0 +1,21 @@
+{
+  "scenes": [
+    {
+      "type": "title",
+      "kicker": "Theme Test",
+      "title": "暖纸主题",
+      "sub": "浅色背景 · 深色文字"
+    },
+    {
+      "type": "list",
+      "mark": "number",
+      "rows": ["适合知识类内容", "纸质感更强"]
+    },
+    {
+      "type": "ending",
+      "title": "换个主色就行",
+      "accent": "主色",
+      "sub": "video.py theme --set dark-teal"
+    }
+  ]
+}

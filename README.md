@@ -113,7 +113,8 @@ AI-v\
 │   └── xiaoxiao\sample.wav
 │
 ├── tools\
-│   ├── make.py             出片主程序
+│   ├── video.py            工程管理：init / theme / check / preview / render
+│   ├── make.py             底层的构建器（video.py 会调用它）
 │   ├── tts_edge.py         微软音色配音
 │   ├── say.py              用声音库音色配音
 │   ├── voice.py            声音库管理
@@ -121,7 +122,8 @@ AI-v\
 │   └── transcribe.py       转写 + 词级时间戳
 │
 ├── skills\                 给 Agent 的操作技能（可扩展）
-│   └── deploy-ai-video\
+│   ├── deploy-ai-video\    部署 / 重建环境
+│   └── make-video\         做视频的七阶段流程
 │       ├── SKILL.md        部署入口
 │       ├── references\     install / troubleshooting
 │       └── scripts\        bootstrap.ps1 / doctor.ps1
@@ -164,12 +166,23 @@ AI-v\
 ## 常用命令
 
 ```powershell
-python tools\make.py new 视频名                                  # 新建
-python tools\make.py 视频名 --render                            # 出片（微软音色，约 90 秒）
-python tools\make.py 视频名 --reuse-audio --subtitles --render  # 只改画面
-python tools\media.py add 视频名 D:\图.png --name 架构图          # 加素材
-python tools\voice.py add 我的声音 录音.m4a --start 2 --dur 8     # 加音色
+# 工程化流程（推荐）
+python tools\video.py init 视频名 --theme warm-paper --duration 45
+python tools\video.py check 视频名
+python tools\video.py preview 视频名 --at 3,12,25
+python tools\video.py render 视频名 --quality delivery
+python tools\video.py status 视频名
+python tools\video.py list
+
+# 底层命令（video.py 内部调用的就是这些）
+python tools\make.py 视频名 --render
+python tools\make.py 视频名 --reuse-audio --subtitles --render
+python tools\media.py add 视频名 D:\图.png --name 架构图
+python tools\voice.py add 我的声音 录音.m4a --start 2 --dur 8
 ```
+
+主题预设：`dark-teal`（默认）/ `warm-paper` / `news-red` / `mono-ink`，用
+`python tools\video.py theme 视频名 --set warm-paper` 切换。
 
 ## 技术栈
 

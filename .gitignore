@@ -11,6 +11,7 @@ videos/*/render*.mp4
 videos/*/audio/*.wav
 videos/*/audio/*.mp3
 videos/*/media/
+videos/*/qa/
 videos/*/*.png
 
 # 环境与缓存
