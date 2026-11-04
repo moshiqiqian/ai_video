@@ -9,70 +9,129 @@
 
 ---
 
-# 怎么用：把项目交给 AI
+# 新人上手：3 步（安装 + 出第一条片）
 
-不需要自己敲命令。打开 Codex / OpenCode / Claude Code / Cursor，把下面这段复制给它：
-
-```
-请阅读当前项目根目录的 INSTALL.md，按里面的步骤在本机安装这个项目。
-装完跑 doctor 验证，把结果告诉我。
-```
-
-AI 会自己读文档、装 skill、装环境、下模型、验证。你只需要在它提问时回答（比如确认磁盘空间）。
-
-安装指令单独放在 **[INSTALL.md](INSTALL.md)**，与这份 README 分开，避免说明越写越长、把安装步骤淹没。
-
----
-
-# 需要的 Skill
-
-这个项目靠 **8 个 skill** 驱动：一个总控、六个阶段、一个部署。
-
-| Skill | 作用 | 什么时候用 |
-|---|---|---|
-| `video-pipeline` | 总控：读状态、调度阶段、要求确认 | 每次做视频 |
-| `video-brief` | 立项：导入文稿、定参数 | 第 1 步 |
-| `video-script` | 文案：写/压缩旁白 | 第 2 步 |
-| `video-storyboard` | 分镜：切屏、校验、出表格 | 第 3 步 |
-| `video-assets` | 素材：检查与登记图片视频 | 第 4 步 |
-| `video-voice` | 配音：edge / IndexTTS2 | 第 5 步 |
-| `video-render` | 渲染：字幕、构建、出片、质检 | 第 6 步 |
-| `deploy-ai-video` | 部署 / 重建环境 / 排错 | 换机器、环境坏了 |
-
-## 注册方式
-
-把仓库 `skills\` 下所有目录复制到 Agent 的 skills 目录：
-
-| Agent | skills 目录 |
-|---|---|
-| OpenCode | `~\.config\opencode\skills\` |
-| Claude Code | `~\.claude\skills\` |
-| 其他 | 见各自文档；没有目录约定就直接给路径 |
+## 1. 下载项目
 
 ```powershell
-# OpenCode 为例
-Copy-Item skills\* "$env:USERPROFILE\.config\opencode\skills\" -Recurse -Force
+git clone https://github.com/moshiqiqian/ai_video.git
+cd ai_video
 ```
 
-装完目录应是这样：
+没有 Git 的话，直接在 GitHub 页面点 **Code → Download ZIP** 解压。
 
-```
-<skills目录>\
-├── video-pipeline\
-├── video-brief\
-├── video-script\
-├── video-storyboard\
-├── video-assets\
-├── video-voice\
-├── video-render\
-└── deploy-ai-video\
+## 2. 用 OpenCode 打开这个文件夹，说一句话
+
+```powershell
+cd ai_video
+opencode
 ```
 
-> 不想注册也可以：每次对话时告诉 Agent「读 skills/video-pipeline/SKILL.md」，效果一样。
+然后输入：
+
+```
+读 README.md，按里面的步骤把项目装好，装完跑 doctor 验证。
+```
+
+**接下来的事它会自己做，你不用敲命令：**
+
+```
+读 README.md → 读 INSTALL.md
+  → 把 skills/ 复制到 ~/.config/opencode/skills/（注册 8 个技能）
+  → 检查 Node / FFmpeg / conda
+  → 建两个 conda 环境、装 CUDA torch、装 IndexTTS2、装 FunASR
+  → 下载模型（5.5 GB）
+  → 跑 doctor 验收
+  → 渲一条验证片
+```
+
+**预计 30–60 分钟**，主要花在下载。期间它可能会问你磁盘空间之类的问题。
+
+安装完成后它会汇报：8 个 skill 是否注册、两个环境是否就绪、doctor 是否 20/20、验证片是否渲染成功。
+
+> 不需要提前手动复制 skill。INSTALL.md 的第 0 步就是让 AI 完成注册。
+
+## 3. 装完就直接说需求
+
+在同一个 OpenCode 会话里直接说：
+
+```
+用这篇文章做一条 45 秒的视频：D:\文章\降息.md
+```
+
+或者没有文稿：
+
+```
+做一条 30 秒的视频，主题是「降息对普通人的影响」，用新闻红的配色。
+```
+
+它会按六个阶段推进，**每步停下来让你确认**：
+
+```
+① 立项   导入文稿、体检字数 → 问你压缩比例
+② 文案   给出全文和字数 → 等你改
+③ 分镜   给你表格 → 等你确认
+④ 素材   问你有没有图（可跳过）
+⑤ 配音   生成后让你听
+⑥ 渲染   抽帧 + 出片
+```
+
+每一步你只需要回「可以」或「改一下 XX」。
+
+## 如果 AI 没自动用 skill
+
+skill 是按描述自动匹配的，偶尔会漏。直接点名：
+
+```
+用 video-pipeline 做一条视频，主题是……
+```
+
+或者更硬一点：
+
+```
+读 skills/video-pipeline/SKILL.md，按它的流程做一条视频。
+```
 
 ---
 
-# 安装
+# 为什么这样设计
+
+| 文件 | 给谁看 | 作用 |
+|---|---|---|
+| `README.md` | 人 | 这是什么、怎么开始 |
+| `INSTALL.md` | AI | 安装步骤、验收标准、硬规则 |
+| `skills/*/SKILL.md` | AI | 每个阶段怎么做、产出什么、何时停 |
+
+安装指令单独放在 **[INSTALL.md](INSTALL.md)**，不写进 README，避免说明越写越长把关键步骤淹没。
+
+---
+
+## skill 是什么
+
+装好之后你会看到 8 个技能，它们决定了 AI 每一步该做什么：
+
+| Skill | 作用 |
+|---|---|
+| `video-pipeline` | 总控：读状态、调度阶段、要求确认 |
+| `video-brief` | 第 1 步 立项：导入文稿、定参数 |
+| `video-script` | 第 2 步 文案 |
+| `video-storyboard` | 第 3 步 分镜 |
+| `video-assets` | 第 4 步 素材 |
+| `video-voice` | 第 5 步 配音 |
+| `video-render` | 第 6 步 渲染与质检 |
+| `deploy-ai-video` | 部署 / 重建环境 / 排错 |
+
+**这些都由 AI 在安装时自动注册，你不需要手动复制。**
+
+如果某次 AI 没自动加载，直接点名就行：
+
+```
+用 video-pipeline 做一条视频，主题是……
+```
+
+---
+
+# 手动安装（不走 AI 时）
 
 完整指令见 **[INSTALL.md](INSTALL.md)**。这里是摘要。
 
@@ -101,13 +160,9 @@ powershell -ExecutionPolicy Bypass -File skills\deploy-ai-video\scripts\doctor.p
 
 ---
 
-# 装完之后怎么出片
+# 日常使用
 
 ## 让 AI 做
-
-```
-用这篇文章做一条 45 秒的视频：D:\文章\降息.md
-```
 
 ```
 把 LangChain全家桶 的第 3 屏拆成两个镜头，每屏最多 2 行。
@@ -121,15 +176,8 @@ powershell -ExecutionPolicy Bypass -File skills\deploy-ai-video\scripts\doctor.p
 把 D:\录音\我的声音.m4a 加进声音库，名字叫「我自己」，截 2-8 秒。
 ```
 
-AI 会按六个阶段推进，每步停下来让你确认：
-
 ```
-① 立项   导入文稿、体检字数、定主题/时长/风格
-② 文案   写或压缩旁白，给出字数和预计时长
-③ 分镜   先给表格，确认后写 scenes.json
-④ 素材   检查图片视频是否齐全（可跳过）
-⑤ 配音   生成音频，让你试听
-⑥ 渲染   转写字幕 → 抽帧 → 出片 → 质检
+换成新闻红的配色。
 ```
 
 ## 自己做
