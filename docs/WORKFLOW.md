@@ -134,22 +134,24 @@ asyncio.run(main())
 edge-tts 只能选现成音色。要克隆某个人的声音（含你自己的），用 IndexTTS2。
 
 ```powershell
+# 1. 把音色加进声音库（一次）
+python tools\voice.py add 我的声音 录音.m4a --start 2 --dur 8 --label "本人"
+
+# 2. 用这个音色配音
 conda activate indextts
-cd C:\Users\bb313\Desktop\AI-v
-python tools\tts_indextts.py                                  # 默认参考 videos/<名字>/audio/ref.wav
-python tools\tts_indextts.py --ref videos/<名字>/audio/my_voice.wav        # 换成你自己的录音
+python tools\say.py 我的声音 --script videos\<名字>\script.txt --out videos\<名字>\audio\vo_我的声音.wav
 ```
 
-要求：参考音频 3–15 秒、单人、无背景音、不爆音。录完直接丢进 `videos\<名字>\audio\`。
+要求：参考音频 3–15 秒、单人、无背景音、不爆音。`voice.py add` 会自动转成 24kHz 单声道。
 
 | 项 | 数值 |
 |---|---|
-| 模型 | 5.49 GB（`vendor/index-tts/checkpoints`） |
+| 模型 | 10.6 GB（`vendor/index-tts/checkpoints`） |
 | 显存 | 4–6 GB（本机 8GB 够） |
-| 速度 | 14 秒音频约 2 分钟（RTF 9.2） |
-| 首次加载 | 20–30 秒 |
+| 速度 | 51 秒音频约 7 分钟（RTF 8–10） |
+| 首次加载 | 20–40 秒 |
 
-时间轴注意：**IndexTTS2 每次生成的长度都不一样**，换音色后必须按新 wav 的实际时长重算 `data-start`。最稳的做法是一句一个 wav 再拼接（见 `tts_indextts.py` 可扩展）。
+时间轴注意：**IndexTTS2 每次生成的长度都不一样**，换音色后必须按新 wav 的实际时长重算 `data-start`。用 `--transcribe` 让 FunASR 出句子边界即可。
 
 ### A3 · 分镜表（跳过也行，但建议）
 

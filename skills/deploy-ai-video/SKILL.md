@@ -80,7 +80,7 @@ powershell -ExecutionPolicy Bypass -File skills\deploy-ai-video\scripts\doctor.p
 
 - `references/install.md` — 完整安装步骤、YAML 还原、镜像地址
 - `references/troubleshooting.md` — 症状 → 原因 → 修复
-- `assets/aivideo.yml` / `assets/indextts.yml` — 环境快照
+- 环境快照在仓库根目录 `env/aivideo.yml`、`env/indextts.yml`（skill 不重复存放）
 
 ## 完成后告诉用户什么
 
