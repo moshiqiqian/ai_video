@@ -18,9 +18,57 @@
 装完跑 doctor 验证，把结果告诉我。
 ```
 
-AI 会自己读文档、装环境、下模型、验证。你只需要在它提问时回答（比如确认磁盘空间）。
+AI 会自己读文档、装 skill、装环境、下模型、验证。你只需要在它提问时回答（比如确认磁盘空间）。
 
 安装指令单独放在 **[INSTALL.md](INSTALL.md)**，与这份 README 分开，避免说明越写越长、把安装步骤淹没。
+
+---
+
+# 需要的 Skill
+
+这个项目靠 **8 个 skill** 驱动：一个总控、六个阶段、一个部署。
+
+| Skill | 作用 | 什么时候用 |
+|---|---|---|
+| `video-pipeline` | 总控：读状态、调度阶段、要求确认 | 每次做视频 |
+| `video-brief` | 立项：导入文稿、定参数 | 第 1 步 |
+| `video-script` | 文案：写/压缩旁白 | 第 2 步 |
+| `video-storyboard` | 分镜：切屏、校验、出表格 | 第 3 步 |
+| `video-assets` | 素材：检查与登记图片视频 | 第 4 步 |
+| `video-voice` | 配音：edge / IndexTTS2 | 第 5 步 |
+| `video-render` | 渲染：字幕、构建、出片、质检 | 第 6 步 |
+| `deploy-ai-video` | 部署 / 重建环境 / 排错 | 换机器、环境坏了 |
+
+## 注册方式
+
+把仓库 `skills\` 下所有目录复制到 Agent 的 skills 目录：
+
+| Agent | skills 目录 |
+|---|---|
+| OpenCode | `~\.config\opencode\skills\` |
+| Claude Code | `~\.claude\skills\` |
+| 其他 | 见各自文档；没有目录约定就直接给路径 |
+
+```powershell
+# OpenCode 为例
+Copy-Item skills\* "$env:USERPROFILE\.config\opencode\skills\" -Recurse -Force
+```
+
+装完目录应是这样：
+
+```
+<skills目录>\
+├── video-pipeline\
+├── video-brief\
+├── video-script\
+├── video-storyboard\
+├── video-assets\
+├── video-voice\
+├── video-render\
+└── deploy-ai-video\
+```
+
+> 不想注册也可以：每次对话时告诉 Agent「读 skills/video-pipeline/SKILL.md」，效果一样。
 
 ---
 
@@ -58,8 +106,7 @@ powershell -ExecutionPolicy Bypass -File skills\deploy-ai-video\scripts\doctor.p
 ## 让 AI 做
 
 ```
-做一条 60 秒的时评视频，主题是「AI 编程工具会不会取代初级程序员」，
-用 xiaoxiao 音色，带字幕，横屏 1080p。
+用这篇文章做一条 45 秒的视频：D:\文章\降息.md
 ```
 
 ```
@@ -74,15 +121,42 @@ powershell -ExecutionPolicy Bypass -File skills\deploy-ai-video\scripts\doctor.p
 把 D:\录音\我的声音.m4a 加进声音库，名字叫「我自己」，截 2-8 秒。
 ```
 
+AI 会按六个阶段推进，每步停下来让你确认：
+
+```
+① 立项   导入文稿、体检字数、定主题/时长/风格
+② 文案   写或压缩旁白，给出字数和预计时长
+③ 分镜   先给表格，确认后写 scenes.json
+④ 素材   检查图片视频是否齐全（可跳过）
+⑤ 配音   生成音频，让你试听
+⑥ 渲染   转写字幕 → 抽帧 → 出片 → 质检
+```
+
 ## 自己做
 
 ```powershell
 conda activate aivideo
 cd AI-v
 
-python tools\make.py new 我的视频
-# 改 videos\我的视频\script.txt 和 scenes.json
-python tools\make.py 我的视频 --render
+# 第 1 步：立项（有文稿就带上）
+python tools\stage.py brief 我的视频 --from D:\文章.md --duration 45 --theme news-red
+# 看 brief.md 后确认
+python tools\stage.py confirm 我的视频 brief
+
+# 第 2 步：文案（改完 script.txt 再跑）
+python tools\stage.py script 我的视频
+python tools\stage.py confirm 我的视频 script
+
+# 第 3–6 步
+python tools\stage.py storyboard 我的视频
+python tools\stage.py confirm 我的视频 storyboard
+python tools\stage.py assets 我的视频          # 没素材会自动跳过
+python tools\stage.py voice 我的视频
+python tools\stage.py confirm 我的视频 voice
+python tools\stage.py render 我的视频 --quality delivery
+
+# 随时查看进度
+python tools\stage.py status 我的视频
 ```
 
 ---
@@ -113,8 +187,8 @@ AI-v\
 │   └── xiaoxiao\sample.wav
 │
 ├── tools\
-│   ├── video.py            工程管理：init / theme / check / preview / render
-│   ├── make.py             底层的构建器（video.py 会调用它）
+│   ├── stage.py            阶段调度：brief/script/storyboard/assets/voice/render
+│   ├── make.py             底层构建器（stage.py 会调用它）
 │   ├── tts_edge.py         微软音色配音
 │   ├── say.py              用声音库音色配音
 │   ├── voice.py            声音库管理
@@ -122,11 +196,14 @@ AI-v\
 │   └── transcribe.py       转写 + 词级时间戳
 │
 ├── skills\                 给 Agent 的操作技能（可扩展）
-│   ├── deploy-ai-video\    部署 / 重建环境
-│   └── make-video\         做视频的七阶段流程
-│       ├── SKILL.md        部署入口
-│       ├── references\     install / troubleshooting
-│       └── scripts\        bootstrap.ps1 / doctor.ps1
+│   ├── video-pipeline\     总控：状态判断与调度
+│   ├── video-brief\        第 1 步 立项（支持导入 md）
+│   ├── video-script\       第 2 步 文案
+│   ├── video-storyboard\   第 3 步 分镜
+│   ├── video-assets\       第 4 步 素材
+│   ├── video-voice\        第 5 步 配音
+│   ├── video-render\       第 6 步 渲染与质检
+│   └── deploy-ai-video\    部署 / 重建环境
 │
 ├── env\                    环境快照 YAML
 ├── docs\                   RUNBOOK / WORKFLOW
@@ -166,23 +243,27 @@ AI-v\
 ## 常用命令
 
 ```powershell
-# 工程化流程（推荐）
-python tools\video.py init 视频名 --theme warm-paper --duration 45
-python tools\video.py check 视频名
-python tools\video.py preview 视频名 --at 3,12,25
-python tools\video.py render 视频名 --quality delivery
-python tools\video.py status 视频名
-python tools\video.py list
+# 六阶段流水线（推荐）
+python tools\stage.py brief      视频名 --from D:\文章.md --duration 45 --theme news-red
+python tools\stage.py script     视频名
+python tools\stage.py storyboard 视频名
+python tools\stage.py assets     视频名
+python tools\stage.py voice      视频名
+python tools\stage.py render     视频名 --quality delivery
 
-# 底层命令（video.py 内部调用的就是这些）
-python tools\make.py 视频名 --render
-python tools\make.py 视频名 --reuse-audio --subtitles --render
+python tools\stage.py confirm 视频名 <阶段>   # 记录人工确认
+python tools\stage.py status  视频名          # 看进度
+python tools\stage.py next    视频名          # 下一步做什么
+
+# 素材与音色
 python tools\media.py add 视频名 D:\图.png --name 架构图
 python tools\voice.py add 我的声音 录音.m4a --start 2 --dur 8
+
+# 单文件直出（跳过阶段，适合快速改画面）
+python tools\make.py 视频名 --reuse-audio --subtitles --render
 ```
 
-主题预设：`dark-teal`（默认）/ `warm-paper` / `news-red` / `mono-ink`，用
-`python tools\video.py theme 视频名 --set warm-paper` 切换。
+主题预设：`dark-teal`（默认）/ `warm-paper` / `news-red` / `mono-ink`。
 
 ## 技术栈
 
@@ -205,8 +286,12 @@ python tools\voice.py add 我的声音 录音.m4a --start 2 --dur 8
 ## 文档
 
 - `INSTALL.md` — 交给 AI 的安装指令
-- `skills\deploy-ai-video\SKILL.md` — 部署技能入口
-- `skills\deploy-ai-video\references\install.md` — 手动安装详解
-- `skills\deploy-ai-video\references\troubleshooting.md` — 排错
-- `docs\RUNBOOK.md` — 日常操作手册
-- `docs\WORKFLOW.md` — 工作流设计说明
+- `skills\video-pipeline\SKILL.md` — 六阶段总控
+- `skills\video-brief\references\import.md` — 文稿导入规则
+- `skills\video-script\references\copywriting.md` — 文案结构
+- `skills\video-storyboard\references\storyboard.md` — 分镜规则
+- `skills\video-voice\references\voices.md` — 音色选择
+- `skills\video-render\references\qa.md` — 质检清单
+- `skills\deploy-ai-video\references\install.md` — 手动安装
+- `docs\RUNBOOK.md` — 日常操作
+- `docs\WORKFLOW.md` — 设计说明

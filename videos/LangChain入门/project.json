@@ -1,0 +1,15 @@
+{
+  "slug": "LangChain入门",
+  "theme": "warm-paper",
+  "theme_overrides": {},
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "engine": "edge",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "voice_pack": null,
+  "rate": "+0%",
+  "subtitles": true,
+  "target_seconds": 33,
+  "created": "2026-11-04"
+}

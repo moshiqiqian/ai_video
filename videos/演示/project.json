@@ -11,5 +11,54 @@
   "rate": "+0%",
   "subtitles": true,
   "target_seconds": 20,
-  "created": "2026-11-04"
+  "created": "2026-11-04",
+  "stages": {
+    "brief": {
+      "status": "skipped",
+      "at": "2026-11-04 14:51:58",
+      "confirmed": true,
+      "artifacts": []
+    },
+    "script": {
+      "status": "done",
+      "at": "2026-11-04 14:51:58",
+      "confirmed": true,
+      "artifacts": [
+        "script.txt",
+        "script.json"
+      ]
+    },
+    "storyboard": {
+      "status": "done",
+      "at": "2026-11-04 14:51:58",
+      "confirmed": true,
+      "artifacts": [
+        "scenes.json",
+        "storyboard.md"
+      ]
+    },
+    "assets": {
+      "status": "skipped",
+      "at": "2026-11-04 14:51:58",
+      "confirmed": true,
+      "artifacts": []
+    },
+    "voice": {
+      "status": "done",
+      "at": "2026-11-04 14:51:58",
+      "confirmed": true,
+      "artifacts": [
+        "audio/"
+      ]
+    },
+    "render": {
+      "status": "done",
+      "at": "2026-11-04 14:51:58",
+      "confirmed": true,
+      "artifacts": [
+        "render.mp4",
+        "render.json"
+      ]
+    }
+  }
 }

@@ -1,0 +1,40 @@
+{
+  "scenes": [
+    {
+      "type": "title",
+      "kicker": "AI 工程入门",
+      "title": "LangChain 全家桶",
+      "sub": "给大模型装上手脚"
+    },
+    {
+      "type": "list",
+      "start_at_sentence": 3,
+      "mark": "number",
+      "rows": [
+        "LangChain 胶水",
+        "连接模型与工具"
+      ]
+    },
+    {
+      "type": "quote",
+      "start_at_sentence": 7,
+      "text": "流程能循环，也能等人拍板。"
+    },
+    {
+      "type": "list",
+      "start_at_sentence": 9,
+      "mark": "number",
+      "rows": [
+        "LangSmith 黑盒",
+        "记录耗时和花费"
+      ]
+    },
+    {
+      "type": "ending",
+      "start_at_sentence": 11,
+      "title": "三者合起来",
+      "accent": "三者",
+      "sub": "模型才真正会做事"
+    }
+  ]
+}

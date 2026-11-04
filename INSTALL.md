@@ -16,7 +16,42 @@
 
 ## 执行步骤
 
-### 0. 先读这三份文档
+### 0. 先注册 skill
+
+本项目依赖八个 skill：
+
+| Skill | 作用 |
+|---|---|
+| `video-pipeline` | 六阶段总控 |
+| `video-brief` | 立项、导入文稿 |
+| `video-script` | 文案 |
+| `video-storyboard` | 分镜 |
+| `video-assets` | 素材 |
+| `video-voice` | 配音 |
+| `video-render` | 渲染与质检 |
+| `deploy-ai-video` | 部署与排错（本文件对应的技能） |
+
+把仓库里的这些目录复制到当前 Agent 的 skills 目录：
+
+```powershell
+# OpenCode
+$dst = "$env:USERPROFILE\.config\opencode\skills"
+Copy-Item skills\* $dst -Recurse -Force
+```
+
+| Agent | skills 目录 |
+|---|---|
+| OpenCode | `~\.config\opencode\skills\` |
+| Claude Code | `~\.claude\skills\` |
+| 其他 | 见该 Agent 文档；不支持目录约定时，后续对话直接用路径引用 `skills/<名字>/SKILL.md` |
+
+注册后确认每个目录里都有 `SKILL.md`：
+
+```powershell
+Get-ChildItem "$env:USERPROFILE\.config\opencode\skills\video-*" | Select-Object Name
+```
+
+### 0.5 读三份技能文档
 
 ```
 skills/deploy-ai-video/SKILL.md
@@ -108,10 +143,11 @@ python tools\make.py LangChain全家桶 --engine indextts --voice-pack xiaoxiao 
 
 ## 装完必须回答用户这四件事
 
-1. 两个 conda 环境是否建好（`aivideo` / `indextts`）
-2. `doctor.ps1` 结果：多少项通过、哪些失败
-3. 验证视频是否渲染成功、路径在哪
-4. 还缺什么（模型没下完、显卡不可用、字体缺失、磁盘不足）
+1. 八个 skill 是否注册（`video-pipeline` / `video-brief` / `video-script` / `video-storyboard` / `video-assets` / `video-voice` / `video-render` / `deploy-ai-video`）
+2. 两个 conda 环境是否建好（`aivideo` / `indextts`）
+3. `doctor.ps1` 结果：多少项通过、哪些失败
+4. 验证视频是否渲染成功、路径在哪
+5. 还缺什么（模型没下完、显卡不可用、字体缺失、磁盘不足）
 
 ---
 
