@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     一键部署 AI-v 视频工程（Windows）。
 

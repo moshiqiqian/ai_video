@@ -7,6 +7,7 @@
 | 现象 | 原因 | 修复 |
 |---|---|---|
 | `ModuleNotFoundError: edge_tts` | 没激活 aivideo | `conda activate aivideo` |
+| `.ps1` 报 `缺少表达式` / 中文全是乱码 | 脚本不是 UTF-8 BOM 保存，PS 5.1 按 ANSI 解析 | 用 VS Code 另存为「UTF-8 with BOM」 |
 | `ModuleNotFoundError: indextts` | 没装本体 | `cd vendor\index-tts && pip install -e .` |
 | `torch.cuda.is_available()` 为 False | 装了 PyPI 的 CPU 版 | 重装：`pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cu126` |
 | `Descriptors cannot be created directly` | protobuf 被 funasr 升到 7.x | `pip install "protobuf==3.19.6"` |

@@ -1,18 +1,91 @@
 # AI-v · 短视频生成工程
 
 用**文字**生成短视频：写一段文案 + 几个画面描述，自动配音、自动排版、自动渲染成 MP4。
-
 全程本机运行，不依赖任何付费 API。
 
 ```
 文案 → 配音 → 时间轴 → 画面(HTML) → Chrome 逐帧截图 → MP4
 ```
 
-## 效果
+---
 
-一条 51 秒的技术科普视频，从文案到成片约 10 分钟（其中 7 分钟是本地 AI 配音）。
+# 怎么用：把项目交给 AI
 
-成片规格：1920×1080 / 30fps / H.264 + AAC，带底部字幕。
+不需要自己敲命令。打开 Codex / OpenCode / Claude Code / Cursor，把下面这段复制给它：
+
+```
+请阅读当前项目根目录的 INSTALL.md，按里面的步骤在本机安装这个项目。
+装完跑 doctor 验证，把结果告诉我。
+```
+
+AI 会自己读文档、装环境、下模型、验证。你只需要在它提问时回答（比如确认磁盘空间）。
+
+安装指令单独放在 **[INSTALL.md](INSTALL.md)**，与这份 README 分开，避免说明越写越长、把安装步骤淹没。
+
+---
+
+# 安装
+
+完整指令见 **[INSTALL.md](INSTALL.md)**。这里是摘要。
+
+前置软件：
+
+| 软件 | 用途 | 安装 |
+|---|---|---|
+| Miniconda | Python 环境 | 官网下载 |
+| Node.js 18+ | HyperFrames 渲染 | `winget install OpenJS.NodeJS.LTS` |
+| FFmpeg | 音频测量、封装 | `winget install Gyan.FFmpeg` |
+| Chrome | 渲染引擎 | 系统自带或官网 |
+
+两条命令：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File skills\deploy-ai-video\scripts\bootstrap.ps1   # 装，30-60 分钟
+powershell -ExecutionPolicy Bypass -File skills\deploy-ai-video\scripts\doctor.ps1      # 验收，20/20 通过
+```
+
+| 脚本 | 作用 |
+|---|---|
+| `bootstrap.ps1` | 检查基础软件 → 建两个环境 → 装 CUDA torch → 装 IndexTTS2 → 装 FunASR → 修 protobuf → 下模型 → 自动体检 |
+| `doctor.ps1` | 只读检查 20 项，逐项 PASS/FAIL，失败项附修复命令 |
+
+环境快照在 `env\aivideo.yml`、`env\indextts.yml`。YAML 装不了 CUDA torch 和本地包，手动步骤见 `skills\deploy-ai-video\references\install.md`。
+
+---
+
+# 装完之后怎么出片
+
+## 让 AI 做
+
+```
+做一条 60 秒的时评视频，主题是「AI 编程工具会不会取代初级程序员」，
+用 xiaoxiao 音色，带字幕，横屏 1080p。
+```
+
+```
+把 LangChain全家桶 的第 3 屏拆成两个镜头，每屏最多 2 行。
+```
+
+```
+把 D:\图\架构图.png 加进 LangChain全家桶 的素材库，名字叫「架构图」。
+```
+
+```
+把 D:\录音\我的声音.m4a 加进声音库，名字叫「我自己」，截 2-8 秒。
+```
+
+## 自己做
+
+```powershell
+conda activate aivideo
+cd AI-v
+
+python tools\make.py new 我的视频
+# 改 videos\我的视频\script.txt 和 scenes.json
+python tools\make.py 我的视频 --render
+```
+
+---
 
 ## 它能做什么
 
@@ -21,68 +94,8 @@
 | 文字转语音 | 微软神经语音（8 种中文音色）或 IndexTTS2 克隆任意音色 |
 | 自动时间轴 | 从音频里测出句子边界，画面按句子切 |
 | 字幕 | 逐句字幕，时间来自 ASR 逐字对齐 |
-| 画面 | 标题、清单、金句、结尾；可插图片和视频 |
+| 画面 | 标题、清单、金句、图片、视频、结尾 |
 | 渲染 | 浏览器逐帧截图，输出确定性视频 |
-
-## 快速开始
-
-已装好的机器上，三条命令：
-
-```powershell
-conda activate aivideo
-cd AI-v
-python tools\make.py new 我的视频
-```
-
-改 `videos\我的视频\script.txt`（文案）和 `scenes.json`（画面），然后：
-
-```powershell
-python tools\make.py 我的视频 --render
-```
-
-成片：`videos\我的视频\render.mp4`
-
-## 部署到新机器
-
-完整步骤、环境快照、排错手册都在 Skill 里：
-
-```
-skills\deploy-ai-video\
-├── SKILL.md              部署流程（Agent 入口）
-├── references\install.md 手动安装详解
-├── references\troubleshooting.md
-└── scripts\bootstrap.ps1 一键安装
-```
-
-一条命令安装（会建环境、装依赖、下模型、体检）：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File skills\deploy-ai-video\scripts\bootstrap.ps1
-```
-
-### 前置软件
-
-| 软件 | 版本 | 检查 |
-|---|---|---|
-| Miniconda | 任意较新版 | `conda --version` |
-| Node.js | 18+ | `node -v` |
-| FFmpeg | 任意新版 | `ffmpeg -version` |
-| Chrome | 任意新版 | 渲染引擎 |
-
-### 两个 Python 环境
-
-| 环境 | Python | 大小 | 装什么 |
-|---|---|---|---|
-| `aivideo` | 3.13 | 0.31 GB | edge-tts（出片） |
-| `indextts` | 3.11 | 7.97 GB | torch 2.8+cu126、IndexTTS2、FunASR |
-
-环境快照在 `env\aivideo.yml` 和 `env\indextts.yml`。
-
-### 模型权重
-
-IndexTTS2 需要 10.6 GB 权重，**不在仓库里**。
-
-`bootstrap.ps1` 会自动从 `hf-mirror.com` 下载；也可以从别的机器拷贝 `vendor\index-tts\checkpoints\`。
 
 ## 项目结构
 
@@ -109,6 +122,9 @@ AI-v\
 │
 ├── skills\                 给 Agent 的操作技能（可扩展）
 │   └── deploy-ai-video\
+│       ├── SKILL.md        部署入口
+│       ├── references\     install / troubleshooting
+│       └── scripts\        bootstrap.ps1 / doctor.ps1
 │
 ├── env\                    环境快照 YAML
 ├── docs\                   RUNBOOK / WORKFLOW
@@ -143,32 +159,16 @@ AI-v\
 { "type": "list", "start_at_sentence": 13, "rows": ["..."] }
 ```
 
-`start_at_sentence` 指“第几句开始时切过来”，句子编号来自 `transcript.json`。
-
-比手写秒数可靠：重新生成音频后句子编号不变。
+`start_at_sentence` 指「第几句开始时切过来」，句子编号来自 `transcript.json`。比手写秒数可靠：重新生成音频后句子编号不变。
 
 ## 常用命令
 
 ```powershell
-# 新建视频
-python tools\make.py new 视频名
-
-# 出片（微软音色，约 90 秒）
-python tools\make.py 视频名 --render
-
-# 出片（克隆音色，约 10 分钟）
-python tools\make.py 视频名 --engine indextts --voice-pack xiaoxiao --transcribe --subtitles --render
-
-# 只改画面，不重新配音
-python tools\make.py 视频名 --reuse-audio --subtitles --render
-
-# 加素材
-python tools\media.py add 视频名 D:\图.png --name 架构图
-python tools\media.py list 视频名
-
-# 加音色
-python tools\voice.py add 我的声音 录音.m4a --start 2 --dur 8
-python tools\voice.py list
+python tools\make.py new 视频名                                  # 新建
+python tools\make.py 视频名 --render                            # 出片（微软音色，约 90 秒）
+python tools\make.py 视频名 --reuse-audio --subtitles --render  # 只改画面
+python tools\media.py add 视频名 D:\图.png --name 架构图          # 加素材
+python tools\voice.py add 我的声音 录音.m4a --start 2 --dur 8     # 加音色
 ```
 
 ## 技术栈
@@ -186,11 +186,14 @@ python tools\voice.py list
 - 渲染慢：51 秒视频约 2.5 分钟（逐帧截图）
 - IndexTTS2 更慢：51 秒音频约 7 分钟
 - 无 BGM / 音效生成能力
-- 无真人素材剪辑（没有 video-use 依赖的 API key）
+- 无真人素材剪辑
 - 中文字体依赖系统（Linux 需装 `fonts-noto-cjk`）
 
 ## 文档
 
+- `INSTALL.md` — 交给 AI 的安装指令
+- `skills\deploy-ai-video\SKILL.md` — 部署技能入口
+- `skills\deploy-ai-video\references\install.md` — 手动安装详解
+- `skills\deploy-ai-video\references\troubleshooting.md` — 排错
 - `docs\RUNBOOK.md` — 日常操作手册
 - `docs\WORKFLOW.md` — 工作流设计说明
-- `skills\deploy-ai-video\` — 部署与排错
