@@ -1,0 +1,9 @@
+{
+  "label": "晓晓（微软 edge-tts）",
+  "source": "voices\\_tmp_sample.mp3",
+  "clip": "0.0s + 9.0s",
+  "duration": 8.69,
+  "sample_rate": 24000,
+  "channels": 1,
+  "created": "2026-11-03"
+}
