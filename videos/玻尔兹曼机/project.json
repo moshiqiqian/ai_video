@@ -1,51 +1,58 @@
 {
-  "slug": "演示",
-  "theme": "warm-paper",
+  "slug": "玻尔兹曼机",
+  "theme": "mono-ink",
   "theme_overrides": {},
   "width": 1920,
   "height": 1080,
   "fps": 30,
   "engine": "edge",
-  "voice": "zh-CN-XiaoxiaoNeural",
+  "voice": "zh-CN-YunyangNeural",
   "voice_pack": null,
   "rate": "+0%",
   "subtitles": true,
-  "target_seconds": 20,
-  "created": "2026-11-04",
+  "target_seconds": 100,
+  "source": {
+    "file": "source\\玻尔兹曼机.md",
+    "chars": 9398,
+    "kind": "D"
+  },
+  "created": "2026-11-05 16:10:06",
   "stages": {
     "brief": {
-      "status": "skipped",
-      "at": "2026-11-04 14:51:58",
+      "status": "done",
+      "at": "2026-11-05 17:02:51",
       "confirmed": true,
-      "artifacts": []
+      "artifacts": [
+        "build/brief.md"
+      ]
     },
     "script": {
       "status": "done",
-      "at": "2026-11-04 14:51:58",
+      "at": "2026-11-05 17:02:51",
       "confirmed": true,
       "artifacts": [
         "script.txt",
-        "script.json"
+        "build/script.json"
       ]
     },
     "storyboard": {
       "status": "done",
-      "at": "2026-11-04 14:51:58",
+      "at": "2026-11-05 17:02:51",
       "confirmed": true,
       "artifacts": [
         "scenes.json",
-        "storyboard.md"
+        "build/storyboard.md"
       ]
     },
     "assets": {
       "status": "skipped",
-      "at": "2026-11-04 14:51:58",
+      "at": "2026-11-05 17:02:51",
       "confirmed": true,
       "artifacts": []
     },
     "voice": {
       "status": "done",
-      "at": "2026-11-04 14:51:58",
+      "at": "2026-11-05 17:02:51",
       "confirmed": true,
       "artifacts": [
         "audio/"
@@ -53,11 +60,11 @@
     },
     "render": {
       "status": "done",
-      "at": "2026-11-04 14:51:58",
+      "at": "2026-11-05 17:02:51",
       "confirmed": true,
       "artifacts": [
-        "render.mp4",
-        "render.json"
+        "output/render.mp4",
+        "build/render.json"
       ]
     }
   }

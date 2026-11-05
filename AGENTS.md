@@ -1,3 +1,19 @@
+# AI-v 视频工程（本仓库的工作方式）
+
+**做视频请先读 `skills/video-pipeline/SKILL.md`，并严格按「交互协议」执行。**
+
+要点：
+
+1. 用 `python tools\stage.py start <名字>` 建目录，然后**逐个提问**：形态 → 时长 → 风格 → 是否有文稿。
+2. **一次只问一个问题，等到回答再问下一个。** 不要替用户选默认值。
+3. `brief` 必须带 `--duration` 和 `--theme`，缺参数会报错（故意的）。
+4. 每阶段结束贴出产物，等用户确认后再 `stage.py confirm`。
+5. 安装 / 重建环境看 `INSTALL.md`。
+
+编码注意：`.md` / `.py` 用 UTF-8（无 BOM），`.ps1` 用 UTF-8 **with BOM**。
+
+---
+
 # HyperFrames Composition Project
 
 This folder is a [HyperFrames](https://hyperframes.heygen.com) video: HTML, CSS and seekable

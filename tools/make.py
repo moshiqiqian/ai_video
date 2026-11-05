@@ -127,12 +127,13 @@ def snap_to_pause(t: float, pauses, window: float = 0.9) -> float:
 
 
 def load_transcript(d: Path):
-    p = d / "audio" / "transcript.json"
-    if p.exists():
-        try:
-            return json.loads(p.read_text(encoding="utf-8"))
-        except Exception:
-            return None
+    for rel in ("build/transcript.json", "audio/transcript.json"):
+        p = d / rel
+        if p.exists():
+            try:
+                return json.loads(p.read_text(encoding="utf-8"))
+            except Exception:
+                return None
     return None
 
 
@@ -248,6 +249,25 @@ CSS = """
 
 def esc(s: str) -> str:
     return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def fill_cues(cues, total: float):
+    """保证字幕全程连续：从 0 开始，到 total 结束，中间不留空档。"""
+    if not cues:
+        return cues
+    cues = sorted(cues, key=lambda c: c["start"])
+    cues[0]["start"] = 0.0
+    for i in range(len(cues) - 1):
+        # 不重叠
+        if cues[i]["end"] > cues[i + 1]["start"]:
+            cues[i]["end"] = cues[i + 1]["start"]
+        # 不留空：本条的结束直接接到下一条开始
+        else:
+            cues[i]["end"] = cues[i + 1]["start"]
+        if cues[i]["end"] <= cues[i]["start"]:
+            cues[i]["end"] = cues[i]["start"] + 0.2
+    cues[-1]["end"] = max(cues[-1]["end"], total)
+    return cues
 
 
 def split_long(cue: dict, limit: int = 16):
@@ -369,7 +389,7 @@ def subs_timeline(cues) -> list[str]:
     return out
 
 
-def build_html(scenes, bounds, audio_rel, total, width, height, cues=None, media_url=None, theme=None):
+def build_html(scenes, bounds, audio_rel, total, width, height, cues=None, media_url=None, theme=None, gsap_src="assets/vendor/gsap.min.js"):
     theme = theme or resolve_theme()
     starts = [0.0] + bounds
     ends = bounds + [total]
@@ -461,7 +481,7 @@ def build_html(scenes, bounds, audio_rel, total, width, height, cues=None, media
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <script src="{gsap_src}"></script>
     <style>{css}    </style>
   </head>
   <body>
@@ -577,7 +597,14 @@ def cmd_build(slug: str, args) -> None:
     if transcript:
         print(f"      参考转写 {len(transcript.get('sentences', []))} 句")
 
-    rel = quote(audio.relative_to(ROOT).as_posix())
+    html_path = d / "build" / "index.html"
+    html_path.parent.mkdir(parents=True, exist_ok=True)
+    base = html_path.parent
+
+    def rel_url(p: Path) -> str:
+        return quote(os.path.relpath(p, base).replace("\\", "/"))
+
+    rel = rel_url(audio)
 
     idx_path = d / "media" / "index.json"
     media = json.loads(idx_path.read_text(encoding="utf-8")) if idx_path.exists() else {}
@@ -590,32 +617,37 @@ def cmd_build(slug: str, args) -> None:
             raise SystemExit(f"素材库里没有「{key}」，用 python tools/media.py list {slug} 查看")
         f = Path(e["file"])
         p = f if f.is_absolute() else (d / "media" / f)
-        return quote(p.relative_to(ROOT).as_posix())
+        return rel_url(p)
+
+    gsap_src = rel_url(ROOT / "assets" / "vendor" / "gsap.min.js")
+
+    if args.subtitles and not transcript:
+        raise SystemExit(
+            "开了字幕但没有转写文件 build/transcript.json。\n"
+            "  先跑：python tools\\transcribe.py " + slug + "\n"
+            "  或渲染时加 --transcribe 自动转写"
+        )
 
     cues = build_cues(script, transcript) if (args.subtitles and transcript) else None
-    if cues and scenes:
-        starts = [0.0] + bounds
-        ends = bounds + [total]
-        kept = []
-        for c in cues:
-            mid = (c["start"] + c["end"]) / 2
-            if any(scenes[i].get("type") in ("quote", "ending") and starts[i] - 0.05 <= mid <= ends[i]
-                   for i in range(len(scenes))):
-                continue
-            kept.append(c)
-        cues = kept
-    (ROOT / "index.html").write_text(
-        build_html(scenes, bounds, rel, total, width, height, cues, media_url, theme), encoding="utf-8")
-    print(f"[3/4] index.html  {len(scenes)} 个镜头" + (f" + {len(cues)} 条字幕" if cues else "")
+    if cues:
+        cues = fill_cues(cues, total)
+
+    html_path.write_text(
+        build_html(scenes, bounds, rel, total, width, height, cues, media_url, theme, gsap_src),
+        encoding="utf-8")
+    print(f"[3/4] build/index.html  {len(scenes)} 个镜头"
+          + (f" + {len(cues)} 条字幕（全程覆盖）" if cues else "")
           + f"  主题 {theme_name}")
 
     if args.render:
         npx = shutil.which("npx") or "npx.cmd"
         subprocess.run([npx, "--yes", "hyperframes@0.9.0", "check", "."], cwd=ROOT)
-        out = d / "render.mp4"
+        out = d / "output" / "render.mp4"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        comp = html_path.relative_to(ROOT).as_posix()
         subprocess.run([npx, "--yes", "hyperframes@0.9.0", "render", ".",
-                        "-o", str(out), "-q", args.quality, "-w", "2"], cwd=ROOT)
-        print(f"[4/4] 成片 -> videos/{slug}/render.mp4")
+                        "-c", comp, "-o", str(out), "-q", args.quality, "-w", "2"], cwd=ROOT)
+        print(f"[4/4] 成片 -> videos/{slug}/output/render.mp4")
     else:
         print(f"[4/4] 跳过渲染（加 --render）")
 

@@ -65,6 +65,14 @@ foreach ($f in @("tools\make.py","tools\voice.py","tools\media.py","tools\transc
 Write-Host "`n=== 渲染链 ===" -ForegroundColor Cyan
 $npmOk = [bool](Get-Command npx -ErrorAction SilentlyContinue)
 Check "npx 可用" $npmOk "装 Node.js"
+$hfOk = $false
+if ($npmOk) {
+    $hfVer = & npx --yes hyperframes@0.9.0 --version 2>$null
+    $hfOk = ($LASTEXITCODE -eq 0)
+}
+Check "HyperFrames 可调用" $hfOk "检查 npm 源，或手动 npx hyperframes@0.9.0 --version"
+$gsap = Join-Path $root "assets\vendor\gsap.min.js"
+Check "本地 GSAP" ((Test-Path $gsap) -and ((Get-Item $gsap).Length -gt 10000)) "缺 assets\vendor\gsap.min.js"
 $chromePaths = @(
   "C:\Program Files\Google\Chrome\Application\chrome.exe",
   "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",

@@ -9,7 +9,7 @@ description: 视频流水线第 3 步「分镜」。用户确认文案后使用�
 
 ## 输入
 
-- `script.json` 的逐句清单
+- `build/script.json` 的逐句清单
 - `project.json` 的时长
 - 已有的 `scenes.json`（brief 阶段生成的三屏骨架）
 
@@ -21,7 +21,7 @@ python tools\stage.py storyboard 视频名
 
 它会：
 1. 校验 `scenes.json`（字数、句号编号、素材引用）
-2. 生成 `storyboard.md` 表格
+2. 生成 `build/storyboard.md` 表格
 3. 有错误就报错退出，不写状态
 
 ## 产出
@@ -29,7 +29,7 @@ python tools\stage.py storyboard 视频名
 | 文件 | 内容 |
 |---|---|
 | `scenes.json` | 画面结构 |
-| `storyboard.md` | 可读的表格 |
+| `build/storyboard.md` | 可读的表格 |
 
 ## 先表格，后 JSON
 
@@ -86,7 +86,7 @@ title → list → image/quote → list → ending
 { "type": "list", "start_at_sentence": 4, "rows": ["..."] }
 ```
 
-编号来自 `audio/transcript.json`（渲染阶段生成）。第一次做分镜时还没有，可以先不写，等配音完成后补。
+编号来自 `build/tranbuild/script.json`（渲染阶段生成）。第一次做分镜时还没有，可以先不写，等配音完成后补。
 
 **这一步不强制要求编号**，没有编号时按平均时间切。
 

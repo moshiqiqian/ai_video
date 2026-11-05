@@ -39,7 +39,7 @@
 |---|---|---|
 | 画面全黑 | GSAP 的 CDN 被墙 | 把 gsap.min.js 下到本地并改引用 |
 | 中文显示成方块 | 缺字体 | Windows 用微软雅黑；Linux 装 fonts-noto-cjk |
-| 视频没声音 | `<audio>` 缺 id 或路径错 | 检查生成的 index.html |
+| 视频没声音 | `<audio>` 缺 id 或路径错 | 检查生成的 build/index.html |
 | `npx: command not found` | Node 没装/没重启终端 | 重开终端 |
 | 渲染 OOM | 多 worker 抢内存 | `-w 1` 或 `--low-memory-mode` |
 | 首帧全黑 | 标题从 opacity 0 开始 | 让首帧就有内容 |

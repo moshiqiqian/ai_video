@@ -19,7 +19,7 @@ npx hyperframes@0.9.0 snapshot . --at 3,12,25 -o videos\名字\qa --keep
 或直接从成片取帧：
 
 ```powershell
-ffmpeg -ss 8 -i videos\名字\render.mp4 -frames:v 1 videos\名字\qa\check.png -y
+ffmpeg -ss 8 -i videos\名字\output/render.mp4 -frames:v 1 videos\名字\qa\check.png -y
 ```
 
 ## 清单
@@ -37,13 +37,13 @@ ffmpeg -ss 8 -i videos\名字\render.mp4 -frames:v 1 videos\名字\qa\check.png 
 一条命令看全：
 
 ```powershell
-ffprobe -v error -show_entries stream=codec_type,codec_name,width,height,duration -of default=nw=1 videos\名字\render.mp4
+ffprobe -v error -show_entries stream=codec_type,codec_name,width,height,duration -of default=nw=1 videos\名字\output/render.mp4
 ```
 
 音量：
 
 ```powershell
-ffmpeg -hide_banner -i videos\名字\render.mp4 -af volumedetect -f null NUL 2>&1 | findstr volume
+ffmpeg -hide_banner -i videos\名字\output/render.mp4 -af volumedetect -f null NUL 2>&1 | findstr volume
 ```
 
 正常范围：mean −22 ~ −16 dB，max −4 ~ −1 dB。
@@ -79,4 +79,4 @@ ffmpeg -hide_banner -i videos\名字\render.mp4 -af volumedetect -f null NUL 2>&
 
 ## 留档
 
-`render.json` 记录了画质、时长、大小、渲染时间。改稿重渲后对比一下，能看出是哪一版。
+`build/render.json` 记录了画质、时长、大小、渲染时间。改稿重渲后对比一下，能看出是哪一版。

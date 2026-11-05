@@ -1,9 +1,19 @@
 ---
 name: video-pipeline
-description: 视频流水线总控。用户说「做一条视频」「继续」「下一步」「这步重做」「进度到哪了」时使用。负责读取项目状态、判断当前该做哪一步、调度对应的阶段技能、并在每步结束时要求人工确认。不要在这里直接写文案或画面，交给阶段技能。
+description: 视频流水线总控。用户说「初始化 X」「做一条视频」「继续」「下一步」「这步重做」「进度到哪了」时使用。负责读取项目状态、判断当前该做哪一步、调度对应的阶段技能、并在每步结束时要求人工确认。不要在这里直接写文案或画面，交给阶段技能。
 ---
 
 # 视频流水线总控
+
+## 触发词：`初始化 <名字>`
+
+用户说 **「初始化 玻尔兹曼机」** 这样一句话，就进入流程：
+
+1. 立刻执行 `python tools\stage.py start <名字>`
+2. **只问第一个问题**，等回答
+3. 回答完问第二个……四个都拿到才 `brief`
+
+不要一次列四个问题，不要替用户选默认值。
 
 一条视频分六个阶段，每阶段独立执行、独立确认。
 
@@ -12,11 +22,60 @@ brief → script → storyboard → assets → voice → render
 立项     文案      分镜         素材      配音      渲染
 ```
 
+## 交互协议（最重要）
+
+**这是对话，不是批处理。** 违反任何一条，用户会觉得「什么都没问我」。
+
+1. **一次只问一个问题**，问完停下，等回答再问下一个。
+2. **不替用户决定**：时长、风格、音色、保留哪几段，必须用户说。
+3. **命令参数必须来自用户回答**：`brief` 缺 `--duration` 或 `--theme` 会直接报错退出，这是故意的。
+4. **每阶段结束必须停**，贴出产物，说明「请确认」。
+5. **确认才 `confirm`**：用户没说「可以 / 确认 / 继续」，不许执行。
+
+### 提问格式（两种环境都要能跑）
+
+有结构化提问工具的 Agent（如 OpenCode 的 `question`）优先用工具。
+
+**纯文字环境（Codex CLI、终端）用编号列表**，并注明可以回数字或自由回答：
+
+```
+问：这条视频讲什么形态？
+1. 科普
+2. 时评
+3. 产品介绍
+4. 教程
+
+回复数字，或直接说你的答案。
+```
+
+不要一次列四个问题，不要用「默认值」跳过。
+
+## 开工：先建目录，再逐个问
+
+```powershell
+python tools\stage.py start 视频名
+```
+它会列出四个待问项：
+
+```
+Q1. 内容形态：科普 / 时评 / 产品介绍 / 教程
+Q2. 多长：15 / 30 / 45 / 60 秒
+Q3. 视觉风格：dark-teal / warm-paper / news-red / mono-ink
+Q4. 有没有现成文稿：有给路径 / 没有由 AI 写
+```
+
+**先问 Q1，等回答；再问 Q2……** 四个都拿到后：
+
+```powershell
+python tools\stage.py brief 视频名 --duration 45 --theme dark-teal [--from 文稿路径]
+```
+
 ## 开工前：读状态
 
 ```powershell
 python tools\stage.py list
 python tools\stage.py status <视频名>
+python tools\stage.py ask <视频名>
 ```
 
 `status` 会打印六个阶段的状态：
@@ -41,16 +100,45 @@ python tools\stage.py status <视频名>
    用户要改 → 重跑该阶段（或回到上游）
 ```
 
+## 每支视频的目录约定
+
+```
+videos/<名字>/
+├── source/              你放素材的地方
+│   ├── articles/        md / txt 文稿
+│   ├── images/          图片
+│   └── clips/           视频片段（B-roll、录屏）
+├── script.txt           旁白（你改）
+├── scenes.json          画面（你改）
+├── project.json         状态机
+├── build/               中间态，可删可重建
+│   ├── brief.md
+│   ├── script.json
+│   ├── storyboard.md
+│   ├── transcript.json
+│   ├── voice.json
+│   └── render.json
+├── audio/               配音
+├── qa/                  抽帧检查
+└── output/render.mp4    成品
+```
+
+规则：
+
+- 只碰 `source/`、`script.txt`、`scenes.json`
+- `build/` 是程序产物，删了能重建
+- 成品只在 `output/`
+
 ## 阶段与技能对照
 
 | 阶段 | 技能 | 产物 | 确认物 |
 |---|---|---|---|
-| brief | `video-brief` | `brief.md`、`script.txt` 初稿、`scenes.json` 骨架 | 主题/时长/风格 |
-| script | `video-script` | `script.txt`、`script.json` | 全文和字数 |
-| storyboard | `video-storyboard` | `scenes.json`、`storyboard.md` | 分镜表格 |
+| brief | `video-brief` | `build/brief.md`、`script.txt` 初稿、`scenes.json` 骨架 | 主题/时长/风格 |
+| script | `video-script` | `script.txt`、`build/script.json` | 全文和字数 |
+| storyboard | `video-storyboard` | `scenes.json`、`build/storyboard.md` | 分镜表格 |
 | assets | `video-assets` | `media/index.json` | 素材清单 |
-| voice | `video-voice` | `audio/vo.*`、`voice.json` | 让用户听 |
-| render | `video-render` | `render.mp4`、`qa/*.png` | 预览帧 + 成片 |
+| voice | `video-voice` | `audio/vo.*`、`build/voice.json` | 让用户听 |
+| render | `video-render` | `output/render.mp4`、`qa/*.png` | 预览帧 + 成片 |
 
 ## 命令
 
@@ -99,7 +187,7 @@ python tools\stage.py next    视频名
 ```
 【第 2 步 · 文案】
 产出：script.txt（186 字，预计 41 秒）
-        script.json（逐句清单）
+        build/script.json（逐句清单）
 问题：2 句超过 40 字，TTS 会念得吃力
 请确认：可以继续做分镜吗？
 ```

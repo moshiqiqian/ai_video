@@ -1,17 +1,19 @@
 # 模型与第三方源码（10.6 GB，不进仓库）
-vendor/
+/vendor/
 
 # 依赖
 node_modules/
 
 # 生成物
 .hyperframes/
-index.html
+/index.html
 videos/*/render*.mp4
 videos/*/audio/*.wav
 videos/*/audio/*.mp3
 videos/*/media/
 videos/*/qa/
+videos/*/output/
+videos/*/build/
 videos/*/*.png
 
 # 环境与缓存

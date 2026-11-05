@@ -41,7 +41,7 @@ python tools\stage.py voice 视频名 --engine indextts --voice-pack xiaoxiao
 | 文件 | 内容 |
 |---|---|
 | `audio/vo.mp3` 或 `audio/vo_<音色>.wav` | 配音 |
-| `voice.json` | 引擎、音色、时长、生成时间 |
+| `build/voice.json` | 引擎、音色、时长、生成时间 |
 
 ## 执行后要做的
 

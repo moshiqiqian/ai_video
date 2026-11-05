@@ -1,6 +1,6 @@
 ---
 name: video-render
-description: 视频流水线第 6 步「渲染」。配音确认后使用，或用户说「出片」「渲染」「出个预览」「画质高一点」时使用。负责转写与字幕、构建 index.html、渲染 MP4、抽帧质检。不改文案和分镜。
+description: 视频流水线第 6 步「渲染」。配音确认后使用，或用户说「出片」「渲染」「出个预览」「画质高一点」时使用。负责转写与字幕、构建 build/index.html、渲染 MP4、抽帧质检。不改文案和分镜。
 ---
 
 # 第 6 步 · 渲染
@@ -31,17 +31,17 @@ python tools\stage.py render 视频名 --transcribe
 
 | 文件 | 内容 |
 |---|---|
-| `index.html` | 画面（在项目根目录，每次重写） |
+| `build/index.html` | 画面（在项目根目录，每次重写） |
 | `videos/<名字>/render.mp4` | 成片 |
 | `videos/<名字>/qa/*.png` | 抽帧 |
 | `videos/<名字>/render.json` | 画质、时长、文件大小 |
-| `audio/transcript.json` | 转写（只在 `--transcribe` 时生成） |
+| `build/tranbuild/script.json` | 转写（只在 `--transcribe` 时生成） |
 
 ## 内部做了什么
 
 ```
 1. 有 --transcribe → 调 FunASR 出词级时间戳
-2. 构建 index.html：套主题、算时间轴、生成字幕轨
+2. 构建 build/index.html：套主题、算时间轴、生成字幕轨
 3. 校验：hyperframes check
 4. 渲染：Chrome 逐帧截图 → ffmpeg 合成
 5. 抽 3 帧到 qa/

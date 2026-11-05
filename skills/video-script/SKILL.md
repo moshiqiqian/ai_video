@@ -9,7 +9,7 @@ description: 视频流水线第 2 步「文案」。用户确认立项后使用�
 
 ## 输入
 
-- `brief.md` 的体检结论
+- `build/brief.md` 的体检结论
 - `source/原文.md`（如果有）
 - `project.json` 的 `target_seconds`
 
@@ -21,14 +21,14 @@ description: 视频流水线第 2 步「文案」。用户确认立项后使用�
 python tools\stage.py script 视频名
 ```
 
-它会输出字数、预计时长、超长句，并生成 `script.json`（逐句清单）。
+它会输出字数、预计时长、超长句，并生成 `build/script.json`（逐句清单）。
 
 ## 产出
 
 | 文件 | 内容 |
 |---|---|
 | `script.txt` | 最终旁白 |
-| `script.json` | 字数、预计秒数、逐句文本 |
+| `build/script.json` | 字数、预计秒数、逐句文本 |
 
 ## 写作要求
 
@@ -64,7 +64,7 @@ python tools\stage.py confirm 视频名 script
 用户说「太书面」→ 拆句、换口语词，重跑。
 用户说「重写」→ 换角度重写，重跑。
 
-**每次改完都要重跑 `script` 命令**，因为 `script.json` 和下游的过期标记依赖它。
+**每次改完都要重跑 `script` 命令**，因为 `build/script.json` 和下游的过期标记依赖它。
 
 ## 常见错误
 

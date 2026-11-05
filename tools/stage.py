@@ -95,29 +95,48 @@ def load(slug: str) -> dict:
 
 
 def migrate(proj: dict) -> None:
-    """旧版 project.json（video.py 时代）补上阶段状态。"""
+    """旧版目录补上阶段状态，并把文件搬到 build/ output/。"""
     d = vdir(proj["slug"])
+    for sub in ("build", "output", "qa", "audio", "media",
+                "source/articles", "source/images", "source/clips"):
+        (d / sub).mkdir(parents=True, exist_ok=True)
+
+    moves = [
+        ("brief.md", "build/brief.md"),
+        ("script.json", "build/script.json"),
+        ("storyboard.md", "build/storyboard.md"),
+        ("voice.json", "build/voice.json"),
+        ("render.json", "build/render.json"),
+        ("render.mp4", "output/render.mp4"),
+        ("audio/transcript.json", "build/transcript.json"),
+    ]
+    for src, dst in moves:
+        s, t = d / src, d / dst
+        if s.exists() and not t.exists():
+            t.parent.mkdir(parents=True, exist_ok=True)
+            s.replace(t)
+
     stages = {}
 
     def done(name, ok, artifacts):
         stages[name] = {"status": "done" if ok else "pending", "at": now(),
                         "confirmed": bool(ok), "artifacts": artifacts}
 
-    done("brief", False, [])
-    if not stages["brief"]["status"] == "done":
-        stages["brief"] = {"status": "skipped", "at": now(), "confirmed": True, "artifacts": []}
+    stages["brief"] = {"status": "skipped", "at": now(), "confirmed": True, "artifacts": []}
+    if (d / "build" / "brief.md").exists():
+        stages["brief"] = {"status": "done", "at": now(), "confirmed": True,
+                           "artifacts": ["build/brief.md"]}
 
-    script = (d / "script.txt")
+    script = d / "script.txt"
     done("script", script.exists() and bool(script.read_text(encoding="utf-8").strip()),
-         ["script.txt", "script.json"])
-    done("storyboard", (d / "scenes.json").exists(), ["scenes.json", "storyboard.md"])
+         ["script.txt", "build/script.json"])
+    done("storyboard", (d / "scenes.json").exists(), ["scenes.json", "build/storyboard.md"])
     done("assets", (d / "media" / "index.json").exists(), ["media/index.json"])
     if not (d / "media" / "index.json").exists():
         stages["assets"] = {"status": "skipped", "at": now(), "confirmed": True, "artifacts": []}
-    audio = (d / "audio")
-    has_audio = any(audio.glob("vo.*")) if audio.exists() else False
+    has_audio = any((d / "audio").glob("vo.*")) if (d / "audio").exists() else False
     done("voice", has_audio, ["audio/"])
-    done("render", (d / "render.mp4").exists(), ["render.mp4", "render.json"])
+    done("render", (d / "output" / "render.mp4").exists(), ["output/render.mp4", "build/render.json"])
     proj["stages"] = stages
 
 
@@ -129,12 +148,12 @@ def save(slug: str, proj: dict) -> None:
 def stage_out(proj: dict, name: str) -> Path:
     d = vdir(proj["slug"])
     return {
-        "brief": d / "brief.md",
+        "brief": d / "build" / "brief.md",
         "script": d / "script.txt",
         "storyboard": d / "scenes.json",
         "assets": d / "media" / "index.json",
-        "voice": vdir(proj["slug"]) / "voice.json",
-        "render": d / "render.mp4",
+        "voice": d / "build" / "voice.json",
+        "render": d / "output" / "render.mp4",
     }[name]
 
 
@@ -267,37 +286,102 @@ def classify(chars: int, target: int, avg_sentence: float) -> tuple[str, str]:
 def cmd_brief(a) -> None:
     slug = a.slug
     d = vdir(slug)
+
+    # 强制先问清楚，缺一不可，不给默认值
+    missing = []
+    if a.duration is None:
+        missing.append("--duration（15/30/45/60）")
+    if not a.theme:
+        missing.append("--theme（dark-teal / warm-paper / news-red / mono-ink）")
+    if missing:
+        print("立项参数不全，不要替用户决定，先问清楚：\n")
+        for i, (key, label, opts) in enumerate(QUESTIONS, 1):
+            print(f"  Q{i}. {label}：{' / '.join(opts)}")
+        print("\n缺：" + "、".join(missing))
+        print(f"\n问完后运行：")
+        print(f"  python tools\\stage.py brief {slug} --duration 45 --theme dark-teal")
+        raise SystemExit(2)
+
     if (d / "project.json").exists() and not a.force:
         raise SystemExit(f"已存在：videos/{slug}（要重建加 --force）")
 
+    # 素材目录：source/articles|images|clips
+    for sub in ("articles", "images", "clips"):
+        (d / "source" / sub).mkdir(parents=True, exist_ok=True)
+    (d / "build").mkdir(parents=True, exist_ok=True)
+
     target = a.duration
+    if isinstance(target, str):
+        if target.strip().lower() in ("auto", "自适应"):
+            target = 0
+        else:
+            try:
+                target = int(target)
+            except ValueError:
+                raise SystemExit("--duration 要给秒数，或写 auto")
     src_text, info = "", {"title": "", "headings": [], "quotes": [], "lists": [], "images": [], "removed": {}}
     src_path = None
 
-    if a.from_:
-        src = Path(a.from_)
+    # 没给 --from 就扫 source/articles
+    src_arg = a.from_
+    if not src_arg:
+        arts = sorted(p for p in (d / "source" / "articles").iterdir()
+                      if p.is_file() and p.suffix.lower() in (".md", ".txt"))
+        if arts:
+            src_arg = str(arts[0])
+            print(f"自动导入：source/articles/{arts[0].name}")
+
+    if src_arg:
+        src = Path(src_arg)
         if not src.exists():
             raise SystemExit(f"找不到文稿：{src}")
         raw = src.read_text(encoding="utf-8", errors="ignore")
         src_text, info = strip_md(raw)
-        (d / "source").mkdir(parents=True, exist_ok=True)
-        src_path = d / "source" / src.name
+        dest = d / "source" / "articles" / src.name
+        if src.resolve() != dest.resolve():
+            dest.write_text(raw, encoding="utf-8")
+        src_path = dest
         src_path.write_text(raw, encoding="utf-8")
 
     body = src_text or "（还没有文案，请在 script.txt 里写）"
     chars = len(re.sub(r"\s", "", src_text))
     sentences = [s for s in re.split(r"[。！？!?]", src_text) if s.strip()]
     avg = (chars / len(sentences)) if sentences else 0
+
+    provisional = target if target > 0 else 45
+    kind, _ = classify(chars, provisional, avg)
+
+    # 时长自适应
+    if target <= 0:
+        if not src_text:
+            raise SystemExit("--duration auto 需要文稿；没有文稿请直接给秒数")
+        keep = {"A": 0.95, "B": 0.10, "C": 0.05, "D": 0.025}[kind]
+        suggest = max(60, min(400, chars * keep))
+        target = max(15, min(180, int(round(suggest / 15.0) * 15)))
+        print(f"自适应时长：{chars} 字（{kind} 类）→ 目标 {int(suggest)} 字 → {target} 秒")
+
     kind, advice = classify(chars, target, avg)
+
+    # 默认音色：有音色库用 IndexTTS2 克隆，否则回退 edge
+    engine = a.engine
+    pack = a.voice_pack
+    if engine is None:
+        voices = ROOT / "voices"
+        has_pack = pack or (voices / "xiaoxiao" / "sample.wav").exists()
+        if has_pack:
+            engine = "indextts"
+            pack = pack or "xiaoxiao"
+        else:
+            engine = "edge"
 
     proj = {
         "slug": slug,
         "theme": a.theme,
         "theme_overrides": {},
         "width": a.width, "height": a.height, "fps": 30,
-        "engine": a.engine,
+        "engine": engine,
         "voice": a.voice,
-        "voice_pack": a.voice_pack,
+        "voice_pack": pack,
         "rate": "+0%",
         "subtitles": not a.no_subtitles,
         "target_seconds": target,
@@ -329,8 +413,9 @@ def cmd_brief(a) -> None:
         f"- 目标时长：{target} 秒（约 {int(target*4.5)} 字）",
         f"- 风格：{a.theme}（{hf.THEMES[a.theme]['label']}）",
         f"- 尺寸：{a.width}x{a.height}",
-        f"- 配音：{a.engine}" + (f" · {a.voice_pack}" if a.voice_pack else f" · {a.voice}"),
+        f"- 配音：{engine}" + (f" · {pack}" if pack else f" · {a.voice}"),
         f"- 来源：{src_path.name if src_path else '无（手写）'}" + (f"（{chars} 字）" if chars else ""),
+        f"- 素材目录：source/articles · source/images · source/clips",
         "",
     ]
     if src_text:
@@ -361,8 +446,9 @@ def cmd_brief(a) -> None:
                   "3. 有没有必须保留的句子？",
                   ""]
 
-    (d / "brief.md").write_text("\n".join(brief), encoding="utf-8")
-    mark(slug, proj, "brief", artifacts=["brief.md"])
+    (d / "build").mkdir(parents=True, exist_ok=True)
+    (d / "build" / "brief.md").write_text("\n".join(brief), encoding="utf-8")
+    mark(slug, proj, "brief", artifacts=["build/brief.md"])
     for s in STAGES[1:]:
         proj.setdefault("stages", {})[s] = {"status": "pending"}
     save(slug, proj)
@@ -401,10 +487,11 @@ def cmd_script(a) -> None:
         "sentences": [{"i": i + 1, "text": s + "。", "chars": len(s)} for i, s in enumerate(sentences)],
         "long_sentences": long_sents,
     }
-    (vdir(slug) / "script.json").write_text(
+    (vdir(slug) / "build").mkdir(parents=True, exist_ok=True)
+    (vdir(slug) / "build" / "script.json").write_text(
         json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    mark(slug, proj, "script", artifacts=["script.txt", "script.json"])
+    mark(slug, proj, "script", artifacts=["script.txt", "build/script.json"])
     save(slug, proj)
 
     print(f"文案 {chars} 字，预计 {est:.1f} 秒（目标 {target}s）")
@@ -437,9 +524,11 @@ def cmd_storyboard(a) -> None:
     if not scenes:
         raise SystemExit("scenes.json 里没有镜头")
 
-    script = json.loads((vdir(slug) / "script.json").read_text(encoding="utf-8")) if (vdir(slug) / "script.json").exists() else {}
+    script = json.loads((vdir(slug) / "build" / "script.json").read_text(encoding="utf-8")) if (vdir(slug) / "build" / "script.json").exists() else {}
     transcript = None
-    tp = vdir(slug) / "audio" / "transcript.json"
+    tp = vdir(slug) / "build" / "transcript.json"
+    if not tp.exists():
+        tp = vdir(slug) / "audio" / "transcript.json"
     if tp.exists():
         transcript = json.loads(tp.read_text(encoding="utf-8"))
     n_sent = len(transcript.get("sentences", [])) if transcript else 0
@@ -477,7 +566,8 @@ def cmd_storyboard(a) -> None:
             warns.append(f"第 {i} 屏用了 start_at_sentence={idx}，但还没有转写，暂时无法校验")
 
     md = ["| 屏 | 从第几句 | 类型 | 内容 |", "|---|---|---|---|"] + rows
-    (vdir(slug) / "storyboard.md").write_text("# 分镜\n\n" + "\n".join(md) + "\n", encoding="utf-8")
+    (vdir(slug) / "build").mkdir(parents=True, exist_ok=True)
+    (vdir(slug) / "build" / "storyboard.md").write_text("# 分镜\n\n" + "\n".join(md) + "\n", encoding="utf-8")
 
     for e in errors:
         print(f"  [错误] {e}")
@@ -486,7 +576,7 @@ def cmd_storyboard(a) -> None:
     if errors:
         raise SystemExit("分镜有错误，先改 scenes.json")
 
-    mark(slug, proj, "storyboard", artifacts=["scenes.json", "storyboard.md"])
+    mark(slug, proj, "storyboard", artifacts=["scenes.json", "build/storyboard.md"])
     save(slug, proj)
 
     print("\n" + "\n".join(md))
@@ -572,7 +662,8 @@ def cmd_voice(a) -> None:
                              proj.get("rate", "+0%"), out))
 
     dur = hf.duration(out)
-    (vdir(slug) / "voice.json").write_text(json.dumps({
+    (vdir(slug) / "build").mkdir(parents=True, exist_ok=True)
+    (vdir(slug) / "build" / "voice.json").write_text(json.dumps({
         "engine": proj.get("engine"),
         "voice": proj.get("voice"),
         "voice_pack": proj.get("voice_pack"),
@@ -581,7 +672,7 @@ def cmd_voice(a) -> None:
         "generated_at": now(),
     }, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    mark(slug, proj, "voice", artifacts=[out.relative_to(vdir(slug)).as_posix(), "voice.json"])
+    mark(slug, proj, "voice", artifacts=[out.relative_to(vdir(slug)).as_posix(), "build/voice.json"])
     save(slug, proj)
 
     print(f"音频 {dur:.2f} 秒 -> {out.relative_to(ROOT)}")
@@ -606,6 +697,12 @@ def cmd_render(a) -> None:
     extra = ["--quality", a.quality]
     if proj.get("subtitles"):
         extra.append("--subtitles")
+        tp = d / "build" / "transcript.json"
+        if not tp.exists():
+            tp = d / "audio" / "transcript.json"
+        if not tp.exists():
+            print("没有转写，先自动转写（约 30 秒）…")
+            extra.append("--transcribe")
     if a.transcribe and proj.get("subtitles"):
         extra.append("--transcribe")
     extra.append("--reuse-audio")
@@ -613,29 +710,35 @@ def cmd_render(a) -> None:
 
     subprocess.run([sys.executable, str(TOOLS / "make.py"), slug, *extra], cwd=ROOT, check=True)
 
-    mp4 = d / "render.mp4"
+    mp4 = d / "output" / "render.mp4"
+    mp4.parent.mkdir(parents=True, exist_ok=True)
     if not mp4.exists():
         raise SystemExit("渲染失败，没有生成 render.mp4")
 
     qa = d / "qa"
     qa.mkdir(exist_ok=True)
-    npx = shutil.which("npx") or "npx.cmd"
     total = hf.duration(audio)
-    pts = [round(total * r, 1) for r in (0.08, 0.45, 0.85)]
-    subprocess.run([npx, "--yes", "hyperframes@0.9.0", "snapshot", ".",
-                    "--at", ",".join(map(str, pts)), "-o", str(qa), "--keep"],
-                   cwd=ROOT, check=False)
 
     info = {
         "quality": a.quality,
         "duration": round(total, 2),
         "bytes": mp4.stat().st_size,
         "rendered_at": now(),
-        "qa": [p.name for p in sorted(qa.glob("*.png"))],
+        "qa": [],
     }
-    (d / "render.json").write_text(json.dumps(info, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    mark(slug, proj, "render", artifacts=["render.mp4", "render.json", "qa/"])
+    # 抽帧（直接从成片取，不依赖根目录 index.html）
+    for ratio in (0.08, 0.45, 0.85):
+        t = round(total * ratio, 1)
+        shot = qa / f"at-{t}s.png"
+        subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+                        "-ss", str(t), "-i", str(mp4), "-frames:v", "1", str(shot)],
+                       check=False)
+        if shot.exists():
+            info["qa"].append(shot.name)
+    (d / "build" / "render.json").write_text(json.dumps(info, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    mark(slug, proj, "render", artifacts=["output/render.mp4", "build/render.json", "qa/"])
     save(slug, proj)
 
     print(f"\n成片 {mp4.relative_to(ROOT)}  {total:.1f}s  {mp4.stat().st_size/1024/1024:.1f} MB")
@@ -715,6 +818,60 @@ def cmd_theme(a) -> None:
         print("\n覆盖项：", json.dumps(ov, ensure_ascii=False))
 
 
+QUESTIONS = [
+    ("kind", "这条视频讲什么形态", ["科普", "时评", "产品介绍", "教程"]),
+    ("duration", "多长", ["15 秒", "30 秒", "45 秒", "60 秒"]),
+    ("theme", "视觉风格", ["dark-teal 深色科技", "warm-paper 浅色纸质",
+                          "news-red 新闻感", "mono-ink 极简黑白"]),
+    ("source", "有没有现成文稿", ["有，给路径", "没有，由 AI 写"]),
+]
+
+
+def cmd_start(a) -> None:
+    """只建目录，不写任何参数，强制先问用户。"""
+    slug = a.slug
+    d = vdir(slug)
+    if (d / "project.json").exists():
+        raise SystemExit(f"已存在：videos/{slug}")
+
+    (d / "audio").mkdir(parents=True, exist_ok=True)
+    (d / "media").mkdir(parents=True, exist_ok=True)
+    (d / "build").mkdir(parents=True, exist_ok=True)
+    (d / "output").mkdir(parents=True, exist_ok=True)
+    for sub in ("articles", "images", "clips"):
+        (d / "source" / sub).mkdir(parents=True, exist_ok=True)
+    draft = {"slug": slug, "answers": {}, "questions": [q[0] for q in QUESTIONS]}
+    (d / "draft.json").write_text(json.dumps(draft, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    print(f"已创建 videos/{slug}（还没有任何参数）\n")
+    print("请逐条询问用户，不要替用户决定：\n")
+    for i, (key, label, opts) in enumerate(QUESTIONS, 1):
+        print(f"  Q{i}. {label}")
+        print(f"      {' / '.join(opts)}")
+    print("\n全部回答后运行：")
+    print(f"  python tools\\stage.py brief {slug} --duration <秒> --theme <主题> [--from 文稿路径]")
+    print(f"  再跑 python tools\\stage.py confirm {slug} brief")
+
+
+def cmd_ask(a) -> None:
+    """打印当前阶段还需要问用户的问题。"""
+    slug = a.slug
+    d = vdir(slug)
+    if (d / "project.json").exists():
+        proj = load(slug)
+        nxt = next_stage(proj)
+        if not nxt:
+            print("全部阶段完成，没有要问的")
+            return
+        print(f"当前阶段：{TITLES[nxt]}")
+        print(f"  python tools\\stage.py {nxt} {slug}")
+        return
+
+    print(f"videos/{slug} 还没立项，需要先问清四项：\n")
+    for i, (key, label, opts) in enumerate(QUESTIONS, 1):
+        print(f"  Q{i}. {label}：{' / '.join(opts)}")
+
+
 def cmd_status(a) -> None:
     slug = a.slug
     proj = load(slug)
@@ -754,6 +911,18 @@ def cmd_next(a) -> None:
         print(f"  python tools\\stage.py {nxt} {a.slug}")
 
 
+def cmd_migrate(a) -> None:
+    targets = [a.slug] if a.slug else [p.name for p in VIDEOS.iterdir() if p.is_dir()]
+    for slug in targets:
+        pj = VIDEOS / slug / "project.json"
+        if not pj.exists():
+            continue
+        proj = json.loads(pj.read_text(encoding="utf-8"))
+        migrate(proj)
+        save(slug, proj)
+        print(f"已迁移：{slug}")
+
+
 def cmd_list(a) -> None:
     if not VIDEOS.exists():
         print("还没有视频")
@@ -775,14 +944,23 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="阶段化视频流水线")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
+    p = sub.add_parser("start", help="新建视频（只建目录，参数必须问用户）")
+    p.add_argument("slug")
+    p.set_defaults(func=cmd_start)
+
+    p = sub.add_parser("ask", help="查看当前还需要问什么")
+    p.add_argument("slug")
+    p.set_defaults(func=cmd_ask)
+
     p = sub.add_parser("brief", help="立项：导入文稿、定参数")
     p.add_argument("slug")
     p.add_argument("--from", dest="from_", help="导入 md/txt 文稿")
-    p.add_argument("--duration", type=int, default=45)
-    p.add_argument("--theme", default=hf.DEFAULT_THEME, choices=list(hf.THEMES))
+    p.add_argument("--duration", default=None, help="必填：目标时长（秒），或 auto 按文稿自适应")
+    p.add_argument("--theme", default=None, choices=list(hf.THEMES), help="必填：配色预设")
     p.add_argument("--width", type=int, default=1920)
     p.add_argument("--height", type=int, default=1080)
-    p.add_argument("--engine", default="edge", choices=["edge", "indextts"])
+    p.add_argument("--engine", default=None, choices=["edge", "indextts"],
+                   help="配音引擎；不给则默认 IndexTTS2（需音色库），没有音色回退 edge")
     p.add_argument("--voice", default="zh-CN-XiaoxiaoNeural")
     p.add_argument("--voice-pack")
     p.add_argument("--no-subtitles", action="store_true")
@@ -840,6 +1018,10 @@ def main() -> None:
 
     p = sub.add_parser("list", help="列出所有视频")
     p.set_defaults(func=cmd_list)
+
+    p = sub.add_parser("migrate", help="把旧目录迁移到 build/output 结构")
+    p.add_argument("slug", nargs="?")
+    p.set_defaults(func=cmd_migrate)
 
     a = ap.parse_args()
     a.func(a)

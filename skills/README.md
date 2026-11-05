@@ -19,12 +19,12 @@
 
 ```
 video-pipeline（总控）
-   ├── video-brief       立项 → brief.md
-   ├── video-script      文案 → script.txt / script.json
-   ├── video-storyboard  分镜 → scenes.json / storyboard.md
+   ├── video-brief       立项 → build/brief.md
+   ├── video-script      文案 → script.txt / build/script.json
+   ├── video-storyboard  分镜 → scenes.json / build/storyboard.md
    ├── video-assets      素材 → media/index.json
-   ├── video-voice       配音 → audio/vo.* / voice.json
-   └── video-render      渲染 → render.mp4 / qa/
+   ├── video-voice       配音 → audio/vo.* / build/voice.json
+   └── video-render      渲染 → output/render.mp4 / qa/
 ```
 
 每个阶段：执行 → 给用户看产物 → `stage.py confirm` → 下一阶段。

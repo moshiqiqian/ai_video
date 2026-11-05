@@ -1,0 +1,98 @@
+{
+  "scenes": [
+    {
+      "type": "title",
+      "kicker": "人工智能 · 教学",
+      "title": "玻尔兹曼机",
+      "sub": "一台敢拥抱随机的神经网络"
+    },
+    {
+      "type": "list",
+      "mark": "number",
+      "start_at_sentence": 3,
+      "rows": [
+        "加入随机性",
+        "加入隐藏单元"
+      ]
+    },
+    {
+      "type": "quote",
+      "start_at_sentence": 7,
+      "text": "背谱，还是即兴？"
+    },
+    {
+      "type": "list",
+      "mark": "→",
+      "start_at_sentence": 9,
+      "rows": [
+        "记住的不是样本",
+        "是背后的规律"
+      ]
+    },
+    {
+      "type": "title",
+      "start_at_sentence": 11,
+      "title": "核心是能量",
+      "sub": "每个状态，都有一个能量"
+    },
+    {
+      "type": "list",
+      "mark": "•",
+      "start_at_sentence": 12,
+      "rows": [
+        "能量越低，越常出现",
+        "概率与能量负指数"
+      ]
+    },
+    {
+      "type": "quote",
+      "start_at_sentence": 17,
+      "text": "温度越高，越敢乱走"
+    },
+    {
+      "type": "list",
+      "mark": "•",
+      "start_at_sentence": 20,
+      "rows": [
+        "所有概率和为一",
+        "除以配分函数 Z"
+      ]
+    },
+    {
+      "type": "title",
+      "start_at_sentence": 22,
+      "title": "一次只看一个神经元",
+      "sub": "开还是关，由能量差决定"
+    },
+    {
+      "type": "list",
+      "mark": "number",
+      "start_at_sentence": 29,
+      "rows": [
+        "正阶段：贴住数据",
+        "负阶段：自由发挥"
+      ]
+    },
+    {
+      "type": "quote",
+      "start_at_sentence": 36,
+      "text": "两者之差，就是更新量"
+    },
+    {
+      "type": "list",
+      "mark": "→",
+      "start_at_sentence": 38,
+      "rows": [
+        "砍掉层内连接",
+        "对比散度近似"
+      ]
+    },
+    {
+      "type": "ending",
+      "start_at_sentence": 42,
+      "title": "关注我",
+      "accent": "关注",
+      "sub": "每周一期，讲透一个 AI 概念"
+    }
+  ]
+}

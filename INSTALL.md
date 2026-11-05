@@ -10,7 +10,7 @@
 
 把本仓库安装到「能出片」状态。
 
-**验收标准**：`doctor.ps1` 输出 `20/20 通过`，且能渲染出一个大于 1 MB 的 mp4。
+**验收标准**：`doctor.ps1` 输出 `22/22 通过`，且能渲染出一个大于 1 MB 的 mp4。
 
 ---
 
@@ -90,7 +90,7 @@ powershell -ExecutionPolicy Bypass -File skills\deploy-ai-video\scripts\bootstra
 powershell -ExecutionPolicy Bypass -File skills\deploy-ai-video\scripts\doctor.ps1
 ```
 
-- `20/20 通过` → 进入第 4 步
+- `22/22 通过` → 进入第 4 步
 - 有失败项 → 按每项后面的 `->` 修复后重跑
 - 同一项连续失败 2 次 → 查 `references/troubleshooting.md`，仍不行如实告知用户
 

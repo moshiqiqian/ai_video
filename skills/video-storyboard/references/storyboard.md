@@ -80,11 +80,11 @@
 
 含义：**第 4 句开始时切到这个画面**。
 
-- 句子编号来自 `transcript.json`（跑 `--transcribe` 生成）
+- 句子编号来自 `tranbuild/script.json`（跑 `--transcribe` 生成）
 - 第一屏不用写，默认从 0 秒开始
 - 编号必须递增
 
-不确定第几句 → 打开 `audio/transcript.json` 看 `sentences` 数组的下标 +1。
+不确定第几句 → 打开 `build/tranbuild/script.json` 看 `sentences` 数组的下标 +1。
 
 也可以写文字：
 

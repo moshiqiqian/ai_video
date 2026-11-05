@@ -90,7 +90,8 @@ def main() -> None:
         "text": item.get("text", ""),
         "sentences": sentences,
     }
-    dest = d / "audio" / "transcript.json"
+    dest = d / "build" / "transcript.json"
+    dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
 
     print(f"\n{len(sentences)} 句 -> {dest.relative_to(ROOT)}")

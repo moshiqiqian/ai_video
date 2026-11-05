@@ -1,5 +1,7 @@
 # AI-v · 短视频生成工程
 
+**当前版本 v2.0.0**（六阶段流水线）：见 [CHANGELOG.md](CHANGELOG.md)
+
 用**文字**生成短视频：写一段文案 + 几个画面描述，自动配音、自动排版、自动渲染成 MP4。
 全程本机运行，不依赖任何付费 API。
 
@@ -47,7 +49,9 @@ opencode
 
 **预计 30–60 分钟**，主要花在下载。期间它可能会问你磁盘空间之类的问题。
 
-安装完成后它会汇报：8 个 skill 是否注册、两个环境是否就绪、doctor 是否 20/20、验证片是否渲染成功。
+安装脚本会做十步：检查基础软件（含 Chrome）→ 建两个 conda 环境 → 装 CUDA torch → 装 IndexTTS2 → 装 FunASR → 修 protobuf → 下模型 → 预热 HyperFrames（约 100 MB）→ 检查本地 GSAP → 体检。
+
+安装完成后它会汇报：8 个 skill 是否注册、两个环境是否就绪、doctor 是否 22/22、验证片是否渲染成功。
 
 > 不需要提前手动复制 skill。INSTALL.md 的第 0 步就是让 AI 完成注册。
 
@@ -148,13 +152,13 @@ skill 是按描述自动匹配的，偶尔会漏。直接点名：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File skills\deploy-ai-video\scripts\bootstrap.ps1   # 装，30-60 分钟
-powershell -ExecutionPolicy Bypass -File skills\deploy-ai-video\scripts\doctor.ps1      # 验收，20/20 通过
+powershell -ExecutionPolicy Bypass -File skills\deploy-ai-video\scripts\doctor.ps1      # 验收，22/22 通过
 ```
 
 | 脚本 | 作用 |
 |---|---|
 | `bootstrap.ps1` | 检查基础软件 → 建两个环境 → 装 CUDA torch → 装 IndexTTS2 → 装 FunASR → 修 protobuf → 下模型 → 自动体检 |
-| `doctor.ps1` | 只读检查 20 项，逐项 PASS/FAIL，失败项附修复命令 |
+| `doctor.ps1` | 只读检查 22 项，逐项 PASS/FAIL，失败项附修复命令 |
 
 环境快照在 `env\aivideo.yml`、`env\indextts.yml`。YAML 装不了 CUDA torch 和本地包，手动步骤见 `skills\deploy-ai-video\references\install.md`。
 
@@ -188,7 +192,7 @@ cd AI-v
 
 # 第 1 步：立项（有文稿就带上）
 python tools\stage.py brief 我的视频 --from D:\文章.md --duration 45 --theme news-red
-# 看 brief.md 后确认
+# 看 build/brief.md 后确认
 python tools\stage.py confirm 我的视频 brief
 
 # 第 2 步：文案（改完 script.txt 再跑）
@@ -224,15 +228,22 @@ python tools\stage.py status 我的视频
 ```
 AI-v\
 ├── videos\                 每支视频一个文件夹
-│   └── LangChain全家桶\
-│       ├── script.txt      旁白文案
-│       ├── scenes.json     画面 + 音色设置
-│       ├── media\          图片/视频素材
-│       ├── audio\          配音 + 转写结果
-│       └── render.mp4      成片
+│   └── 玻尔兹曼机\
+│       ├── source\         你放素材的地方
+│       │   ├── articles\   文稿 md/txt
+│       │   ├── images\     图片
+│       │   └── clips\      视频片段
+│       ├── script.txt      旁白
+│       ├── scenes.json     画面
+│       ├── build\          中间态（brief/script/storyboard/transcript/voice/render）
+│       ├── audio\          配音
+│       ├── qa\             抽帧
+│       └── output\render.mp4
 │
 ├── voices\                 声音库（可复用音色）
 │   └── xiaoxiao\sample.wav
+│
+├── assets\vendor\          gsap.min.js（本地，不依赖 CDN）
 │
 ├── tools\
 │   ├── stage.py            阶段调度：brief/script/storyboard/assets/voice/render
@@ -267,7 +278,7 @@ AI-v\
 | `script.txt` | 念出来的话 |
 | `scenes.json` | 屏幕上出现什么、什么时候出现 |
 
-`make.py` 读这两个文件，产出 `audio\vo_*.wav`、`index.html`、`render.mp4`。
+`make.py` 读这两个文件，产出 `audio\vo_*.wav`、`build/index.html`、`output/render.mp4`。
 
 ### 画面类型
 
@@ -286,7 +297,7 @@ AI-v\
 { "type": "list", "start_at_sentence": 13, "rows": ["..."] }
 ```
 
-`start_at_sentence` 指「第几句开始时切过来」，句子编号来自 `transcript.json`。比手写秒数可靠：重新生成音频后句子编号不变。
+`start_at_sentence` 指「第几句开始时切过来」，句子编号来自 `tranbuild/script.json`。比手写秒数可靠：重新生成音频后句子编号不变。
 
 ## 常用命令
 
@@ -306,6 +317,9 @@ python tools\stage.py next    视频名          # 下一步做什么
 # 素材与音色
 python tools\media.py add 视频名 D:\图.png --name 架构图
 python tools\voice.py add 我的声音 录音.m4a --start 2 --dur 8
+
+# 预览某一支（画面文件在 build/index.html）
+npx hyperframes@0.9.0 preview . -c videos/视频名/build/index.html
 
 # 单文件直出（跳过阶段，适合快速改画面）
 python tools\make.py 视频名 --reuse-audio --subtitles --render
@@ -333,11 +347,12 @@ python tools\make.py 视频名 --reuse-audio --subtitles --render
 
 ## 文档
 
+- `CHANGELOG.md` — 版本变更
 - `INSTALL.md` — 交给 AI 的安装指令
 - `skills\video-pipeline\SKILL.md` — 六阶段总控
 - `skills\video-brief\references\import.md` — 文稿导入规则
 - `skills\video-script\references\copywriting.md` — 文案结构
-- `skills\video-storyboard\references\storyboard.md` — 分镜规则
+- `skills\video-storyboard\references\build/storyboard.md` — 分镜规则
 - `skills\video-voice\references\voices.md` — 音色选择
 - `skills\video-render\references\qa.md` — 质检清单
 - `skills\deploy-ai-video\references\install.md` — 手动安装
