@@ -690,25 +690,34 @@ def cmd_render(a) -> None:
     require_deps(slug, proj, "render", a.force)
 
     d = vdir(slug)
-    audio = voice_file(proj)
-    if not audio.exists():
-        raise SystemExit("还没有配音，先运行 voice 阶段")
+    film = d / "film"
+    lemo_mode = (film / "index.html").exists()
 
-    extra = ["--quality", a.quality]
-    if proj.get("subtitles"):
-        extra.append("--subtitles")
-        tp = d / "build" / "transcript.json"
-        if not tp.exists():
-            tp = d / "audio" / "transcript.json"
-        if not tp.exists():
-            print("没有转写，先自动转写（约 30 秒）…")
+    if lemo_mode:
+        # 新链路：render(t) 页面 + 逐帧截图 + ffmpeg 合成
+        subprocess.run([sys.executable, str(TOOLS / "lemo.py"), "render", slug],
+                       cwd=ROOT, check=True)
+        audio = None
+    else:
+        audio = voice_file(proj)
+        if not audio.exists():
+            raise SystemExit("还没有配音，先运行 voice 阶段")
+
+        extra = ["--quality", a.quality]
+        if proj.get("subtitles"):
+            extra.append("--subtitles")
+            tp = d / "build" / "transcript.json"
+            if not tp.exists():
+                tp = d / "audio" / "transcript.json"
+            if not tp.exists():
+                print("没有转写，先自动转写（约 30 秒）…")
+                extra.append("--transcribe")
+        if a.transcribe and proj.get("subtitles"):
             extra.append("--transcribe")
-    if a.transcribe and proj.get("subtitles"):
-        extra.append("--transcribe")
-    extra.append("--reuse-audio")
-    extra.append("--render")
+        extra.append("--reuse-audio")
+        extra.append("--render")
 
-    subprocess.run([sys.executable, str(TOOLS / "make.py"), slug, *extra], cwd=ROOT, check=True)
+        subprocess.run([sys.executable, str(TOOLS / "make.py"), slug, *extra], cwd=ROOT, check=True)
 
     mp4 = d / "output" / "render.mp4"
     mp4.parent.mkdir(parents=True, exist_ok=True)
@@ -717,10 +726,16 @@ def cmd_render(a) -> None:
 
     qa = d / "qa"
     qa.mkdir(exist_ok=True)
-    total = hf.duration(audio)
+    if lemo_mode:
+        out = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
+                              "format=duration", "-of", "default=nw=1:nk=1", str(mp4)],
+                             capture_output=True, text=True, check=True).stdout.strip()
+        total = float(out)
+    else:
+        total = hf.duration(audio)
 
     info = {
-        "quality": a.quality,
+        "quality": "lemo" if lemo_mode else a.quality,
         "duration": round(total, 2),
         "bytes": mp4.stat().st_size,
         "rendered_at": now(),

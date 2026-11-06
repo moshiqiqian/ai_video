@@ -26,3 +26,7 @@ __pycache__/
 Thumbs.db
 .DS_Store
 desktop.ini
+
+engine/node_modules/
+videos/*/film/out/
+videos/*/film/stills/
