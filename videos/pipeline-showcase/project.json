@@ -1,0 +1,25 @@
+{
+  "slug": "pipeline-showcase",
+  "pipeline": "lemo",
+  "style": "swiss-motion",
+  "duration": 48,
+  "language": "zh",
+  "fps": 24,
+  "topic": "六阶段视频流水线",
+  "stages": {
+    "brief": "done",
+    "script": "done",
+    "storyboard": "done",
+    "voice": "done",
+    "mix": "done",
+    "render": "done"
+  },
+  "confirmed": {
+    "brief": true,
+    "script": true,
+    "storyboard": true,
+    "voice": true,
+    "mix": true,
+    "render": true
+  }
+}
