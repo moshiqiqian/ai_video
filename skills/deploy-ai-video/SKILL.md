@@ -5,7 +5,7 @@ description: 在新机器上安装 AI-v（Python 环境、IndexTTS2 模型、Nod
 
 # 部署 AI-v
 
-完整步骤见仓库根目录的 [INSTALL.md](../../INSTALL.md)。这里只列执行顺序。
+完整步骤见 [docs/INSTALL.md](../../docs/INSTALL.md)。这里只列执行顺序。
 
 ## 1. 系统工具
 

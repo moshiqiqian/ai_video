@@ -1,32 +1,37 @@
-﻿# AI-v 路 鐢ㄤ唬鐮佺敓鎴愮煭瑙嗛
+﻿# AI-v · 用代码生成短视频
 
-涓€鍙ヨ瘽鏂囨锛屽叚姝ョ‘璁わ紝浜у嚭涓€鏉″甫閰嶉煶銆侀厤涔愩€佸瓧骞曠殑 MP4銆?鐢婚潰涓嶆槸妯℃澘锛屾槸姣忎竴甯х畻鍑烘潵鐨勩€?
-```
-鏂囨 鈫?閫愬彞閰嶉煶 鈫?鏃堕棿杞?鈫?render(t) 鐢婚潰 鈫?閫愬抚鎴浘 鈫?娣烽煶 鈫?MP4
-```
-
-鍏ㄧ▼鏈満杩愯锛屼笉璋冪敤浠讳綍鍦ㄧ嚎鐢熸垚 API銆?
-## 鍏
+一句话文案，六步确认，产出一条带配音、配乐、字幕的 MP4。
+画面不是模板，是每一帧算出来的。
 
 ```
-brief 鈫?script 鈫?storyboard 鈫?voice 鈫?mix 鈫?render
-绔嬮」     鏂囨      鍒嗛暅          閰嶉煶     娣烽煶    娓叉煋
+文案 → 逐句配音 → 时间轴 → render(t) 画面 → 逐帧截图 → 混音 → MP4
 ```
 
-姣忎竴姝ラ兘鐣欎笅鏂囦欢锛岄兘瑕佷綘鐐瑰ご鎵嶇户缁紱涓婃父鏀逛簡锛屼笅娓歌嚜鍔ㄦ爣璁拌繃鏈熴€?
-| 姝?| 浜х墿 | 璋佹潵鍋?|
+全程本机运行，不调用任何在线生成 API。
+
+## 六步
+
+```
+brief → script → storyboard → voice → mix → render
+立项     文案      分镜          配音     混音    渲染
+```
+
+每一步都留下文件，都要你点头才继续；上游改了，下游自动标记过期。
+
+| 步 | 产物 | 谁来做 |
 |---|---|---|
-| 绔嬮」 | `project.json`銆乣source/brief.md` | 閫夐鏍笺€佹椂闀裤€佽瑷€ |
-| 鏂囨 | `build/lines.json` | 鎸夊彞鎷嗗紑 |
-| 鍒嗛暅 | `build/timeline.json` | 姣忓彞鐨勮捣姝㈡椂闂?|
-| 閰嶉煶 | `film/audio/l1.wav鈥銆乣voice.wav` | IndexTTS2 鍏嬮殕闊宠壊 |
-| 娣烽煶 | `music.wav`銆乣mix.wav` | 閰嶄箰 + 渚ч摼锛屸垝14 LUFS |
-| 娓叉煋 | `output/render.mp4`銆乣qa/` | 閫愬抚鎴浘 + ffmpeg |
+| 立项 | `project.json`、`source/brief.md` | 选风格、时长、语言 |
+| 文案 | `build/lines.json` | 按句拆开 |
+| 分镜 | `build/timeline.json` | 每句的起止时间 |
+| 配音 | `film/audio/l1.wav…`、`voice.wav` | IndexTTS2 克隆音色 |
+| 混音 | `music.wav`、`mix.wav` | 配乐 + 侧链，−14 LUFS |
+| 渲染 | `output/render.mp4`、`qa/` | 逐帧截图 + ffmpeg |
 
-## 蹇€熷紑濮?
+## 快速开始
+
 ```powershell
 python tools\pipeline.py start demo
-python tools\pipeline.py brief demo --style swiss-motion --duration 48 --language zh --topic "涓婚"
+python tools\pipeline.py brief demo --style swiss-motion --duration 48 --language zh --topic "主题"
 python tools\pipeline.py script demo --file source\script.txt
 python tools\pipeline.py storyboard demo
 python tools\pipeline.py voice demo
@@ -34,7 +39,7 @@ python tools\pipeline.py mix demo
 python tools\pipeline.py render demo
 ```
 
-鐢婚潰鏂囦欢鍦?`videos/<鍚嶅瓧>/film/`锛氫竴涓?`index.html`銆佷竴涓?`main.js`锛屾毚闇诧細
+画面文件在 `videos/<名字>/film/`：一个 `index.html`、一个 `main.js`，暴露：
 
 ```js
 window.render = t => { ... };
@@ -42,34 +47,38 @@ window.DUR = 48;
 window.READY = true;
 ```
 
-## 绀轰緥
+## 示例
 
-`videos/pipeline-showcase/`锛?8 绉掞紝鍏樁娈垫祦绋嬪浘锛屼腑鏂囨梺鐧?+ 绋嬪簭鍖栭厤涔愩€?
+`videos/pipeline-showcase/`：48 秒，六阶段流程图，中文旁白 + 程序化配乐。
+
 ```powershell
 start videos\pipeline-showcase\output\render.mp4
 ```
 
-## 渚濊禆
+## 依赖
 
-| 鍔熻兘 | 渚濊禆 |
+| 功能 | 依赖 |
 |---|---|
-| 鐢婚潰娓叉煋 | Node 20+銆乣engine/` 閲岀殑 playwright-core + three銆丆hrome 鎴?Edge銆乫fmpeg |
-| 閰嶉煶 | conda 鐜 `indextts`锛坱orch 2.8 + CUDA锛夈€乣vendor/index-tts/`銆乣voices/<闊宠壊>/sample.wav` |
-| 閰嶄箰 / 娣烽煶 | Python `aivideo` 鐜锛坣umpy銆乻oundfile锛夈€乫fmpeg |
-| 娴佹按绾?| Python 3.11锛堝彧鐢ㄦ爣鍑嗗簱锛?|
-| 瀛楀箷 | 鐢诲湪 canvas 閲岋紝鏃犻澶栦緷璧?|
+| 画面渲染 | Node 20+、`engine/` 里的 playwright-core + three、Chrome 或 Edge、ffmpeg |
+| 配音 | conda 环境 `indextts`（Python 3.11、torch 2.8 + CUDA）、`vendor/index-tts/`、`voices/<音色>/sample.wav` |
+| 配乐 / 混音 | conda 环境 `aivideo`（Python 3.13、numpy、soundfile）、ffmpeg |
+| 流水线 | conda 环境 `aivideo`（只用标准库） |
+| 字幕 | 画在 canvas 里，无额外依赖 |
 
-瀹屾暣瀹夎瑙?[INSTALL.md](INSTALL.md)銆傛祦绋嬬粏鑺傝 [PIPELINE.md](PIPELINE.md)銆?
-## 鐩綍
+完整安装见 [docs/INSTALL.md](docs/INSTALL.md)。流程细节见 [docs/PIPELINE.md](docs/PIPELINE.md)。
+
+## 目录
 
 ```
-engine/           娓叉煋鍣?+ 66 浠介鏍艰鑼冿紙vendored锛孧IT锛?tools/            pipeline.py / lemo.py / say_lines.py / music_bed.py
-videos/<鐗囧瓙>/     source build film output qa
-voices/           鍏嬮殕闊宠壊鏍锋湰
-vendor/index-tts/ IndexTTS2 妯″瀷
-env/              conda 鐜瀹氫箟
+engine/           渲染器 + 66 份风格规范（vendored，MIT）
+tools/            pipeline.py / lemo.py / say_lines.py / music_bed.py
+videos/<片子>/     source build film output qa
+voices/           克隆音色样本
+vendor/index-tts/ IndexTTS2 模型
+env/              conda 环境定义
+docs/             安装与流程文档
 ```
 
-## 鐗堟湰
+## 版本
 
-v3.0.0銆傛棫鐨勬ā鏉挎嫾瑁呴摼宸茬Щ闄わ紱闇€瑕佹椂浠?git 鍘嗗彶鍙栧洖銆?
+v3.0.0。旧的模板拼装链已移除；需要时从 git 历史取回。
