@@ -1,32 +1,24 @@
-# 模型与第三方源码（10.6 GB，不进仓库）
+# 模型与第三方源码（大，不进仓库）
 /vendor/
 
 # 依赖
-node_modules/
+engine/node_modules/
 
-# 生成物
-.hyperframes/
-/index.html
-videos/*/render*.mp4
-videos/*/audio/*.wav
-videos/*/audio/*.mp3
-videos/*/media/
-videos/*/qa/
-videos/*/output/
-videos/*/build/
-videos/*/*.png
-
-# 环境与缓存
-.vscode/
+# 缓存
 __pycache__/
 *.pyc
 *.pyo
+
+# 每部片子的中间产物
+videos/*/build/*.log
+videos/*/film/out/
+videos/*/film/stills/
+videos/*/film/audio/*.wav
+videos/*/film/audio/*.mp3
+videos/*/qa/
 
 # 系统
 Thumbs.db
 .DS_Store
 desktop.ini
-
-engine/node_modules/
-videos/*/film/out/
-videos/*/film/stills/
+.vscode/

@@ -1,125 +1,71 @@
-# AI-v 视频工程（本仓库的工作方式）
+# AGENTS.md
 
-**做视频请先读 `skills/video-pipeline/SKILL.md`，并严格按「交互协议」执行。**
+## 这个仓库是什么
 
-要点：
+用代码生成短视频。一条片子 = 一个 `render(t)` 页面 + 逐句配音 + 程序化配乐。
 
-1. 用 `python tools\stage.py start <名字>` 建目录，然后**逐个提问**：形态 → 时长 → 风格 → 是否有文稿。
-2. **一次只问一个问题，等到回答再问下一个。** 不要替用户选默认值。
-3. `brief` 必须带 `--duration` 和 `--theme`，缺参数会报错（故意的）。
-4. 每阶段结束贴出产物，等用户确认后再 `stage.py confirm`。
-5. 安装 / 重建环境看 `INSTALL.md`。
+旧链（`stage.py`、`make.py`、`templates/`、`library/`、HyperFrames）已移除，不要恢复。
 
-编码注意：`.md` / `.py` 用 UTF-8（无 BOM），`.ps1` 用 UTF-8 **with BOM**。
-
----
-
-# HyperFrames Composition Project
-
-This folder is a [HyperFrames](https://hyperframes.heygen.com) video: HTML, CSS and seekable
-animations (GSAP by default) that the `hyperframes` CLI previews in the browser and renders to
-MP4.
-
-## Skills — read these first
-
-**Invoke the relevant skill before writing or modifying compositions.** Skills encode framework-specific patterns (e.g., `window.__timelines` registration, `data-*` attribute semantics, shader-compatible CSS rules) that generic web docs don't cover, so compositions written without them break.
-
-**Doing anything with HyperFrames?** Start at `/hyperframes`. Make any video by asking for it; the `/hyperframes` skill carries the contract and the references (each kind of film, story, motion, look, sound, review, captions, overlays). Read it first, especially when there's no project context to orient you.
-
-- `/hyperframes` — read first for any request to make, edit, animate or render a video, motion graphic, captions or overlays. Holds the render contract and the work loop.
-- `/hyperframes-cli` — the CLI by job: scaffold, check, look at frames, edit the timeline, preview, render, publish, project history.
-- `/hyperframes-registry` — ready-made blocks and components installed as editable source. Search it before hand-building any named visual.
-- `/media-use` — get or make any media (music, sound effects, images, voiceover, avatar and generated video, transcripts, cutouts, colour grades) and mix placed audio.
-- `/figma` — bring a Figma design, frame, logo or brand into a video.
-- `/slideshow` — a presentation or pitch deck. Output is a navigable deck, not a rendered MP4.
-- `/remotion-to-hyperframes` — bring existing video code or footage into HyperFrames (Remotion first; also Motion Canvas, Lottie, Three.js, canvas, or renders from other tools) and verify it frame by frame against the original.
-
-**Changing how real footage or images look or reveal?** Load `/media-use` and read its `references/media-treatments.md` before editing, even when the request only says dark, flat, boring, retro, private, or “make the reveal cooler.” It governs how footage is treated, never whether media may be used. Use canonical media treatments and seek-safe motion; do not improvise equivalent CSS/SVG filters or overlays.
-
-> **Tailwind v4 projects** (`hyperframes init --tailwind`): see `hyperframes-cli/references/init-and-scaffold.md` (Tailwind).
-
-> **Using a HyperFrames plugin?** Load skills from that installed bundle and follow
-> its `hyperframes/references/plugin-installation.md` execution rules. Update via
-> the plugin manager, not the standalone commands below.
->
-> **Standalone skill missing or stale?** Run `npx hyperframes skills update <name>` to install/refresh
-> the specific skill you need, or bare `npx hyperframes skills update` to refresh the core set plus
-> everything already installed — neither pulls the full set. Restart the agent session so
-> newly installed skills load.
-
-## Commands
-
-```bash
-npm run dev          # human-operated foreground preview (blocks until stopped)
-npx hyperframes preview --background  # agent-safe persistent Studio preview
-npx hyperframes preview --status      # verify the persistent preview is listening
-npx hyperframes preview --stop        # stop it when review is finished
-npm run check        # lint + runtime + layout + motion + contrast (one command)
-npx hyperframes snapshot --at 1,3,5  # PNG frames at those seconds, to look at before rendering
-npm run render       # render to MP4
-npm run publish      # publish and get a shareable link
-npx hyperframes lint --verbose  # include info-level findings
-npx hyperframes lint --json     # machine-readable output for CI
-npx hyperframes docs <topic> # reference docs in terminal
-```
-
-> **Agents must use `npx hyperframes preview --background` for Studio handoff.** Do not rely
-> on a shell/tool `run_in_background` wrapper around `npm run dev`: that foreground process
-> remains owned by the invoking session and can disappear while the browser stays open,
-> leaving refreshes at `ERR_CONNECTION_TIMED_OUT`. Verify with `preview --status`, keep it
-> alive through review, and stop it explicitly with `preview --stop` afterward.
-
-> **Back from the desktop app.** Once this project was opened in the HyperFrames desktop app, run `npx hyperframes catch-up` before your next change here: it lists what the person asked Framey in the app and which files changed since.
-
-> **Pinned CLI version.** These scripts pin an exact `hyperframes@X.Y.Z` so this project re-renders identically over time. Weeks later that pin lags fixes shipped since. To move up: `npx hyperframes@latest upgrade --project . --check` (shows the delta), then `npx hyperframes@latest upgrade --project .` to rewrite the pins. Always unpinned — the pinned script re-runs the old version against itself.
-
-## Documentation
-
-**For quick reference**, use the local CLI docs command (no network required):
-
-```bash
-npx hyperframes docs <topic>
-```
-
-Topics: `data-attributes`, `gsap`, `compositions`, `rendering`, `examples`, `troubleshooting`
-
-**For full documentation**, discover pages via the machine-readable index — do NOT guess URLs:
+## 六个阶段
 
 ```
-https://hyperframes.heygen.com/llms.txt
+brief → script → storyboard → voice → mix → render
 ```
 
-## Project Structure
+每步必须停下来等用户确认。不要一次问多个问题，不要替用户选时长、风格、音色。
 
-- `index.html` — main composition (root timeline)
-- `compositions/` — sub-compositions referenced via `data-composition-src`
-- `meta.json` — project metadata (id, name)
-- `transcript.json` — whisper word-level transcript (if generated)
+命令：
 
-## Linting — ALWAYS RUN AFTER CHANGES
-
-After creating or editing any `.html` composition, **always** run the full check before considering the task complete:
-
-```bash
-npm run check
+```powershell
+python tools\pipeline.py start <slug>
+python tools\pipeline.py brief <slug> --style <style> --duration <秒> --language zh
+python tools\pipeline.py script <slug> --file source\script.txt
+python tools\pipeline.py storyboard <slug>
+python tools\pipeline.py voice <slug> [--voice-pack xiaoxiao]
+python tools\pipeline.py mix <slug>
+python tools\pipeline.py render <slug>
+python tools\pipeline.py confirm <slug> <stage>
+python tools\pipeline.py status <slug>
 ```
 
-Fix all errors before presenting the result. Warnings should be reviewed before rendering.
+## 画面规则
 
-Then look at what you changed: `npx hyperframes snapshot --at <seconds>` (or `--range START,END`, `--composition <id>`) at the moments you edited, and read the frames before you reply. A passing check does not show how it looks.
+- 文件：`videos/<slug>/film/index.html` + `main.js`
+- 必须暴露 `window.render(t)`、`window.DUR`、`window.READY`
+- 纯函数：不读上一帧，不用 `Date.now()`，随机必须固定种子
+- 1920×1080，24fps，文字避开底部 90px 字幕区
+- 先读 `engine/styles/<style>/STYLE.md`，再写画面
 
-## Key Rules
+## 声音规则
 
-1. Every timed element needs `data-start` and a duration. `data-start` is what marks it as timed; `data-track-index` is an optional Studio display lane the render never reads
-2. Give timed visual elements `class="clip"`. The framework keys visibility off `data-start`, not the class, but the shared `.clip` CSS is what gives a scene its full-frame box, and `lint` warns without it
-3. Register one paused root timeline per composition on `window.__timelines`:
-   ```js
-   window.__timelines = window.__timelines || {};
-   window.__timelines["composition-id"] = gsap.timeline({ paused: true });
-   ```
-   Scene timelines manually added to this root must not be paused. A paused
-   child does not advance when the root is seeked. The runtime activates
-   registered composition siblings, not arbitrary nested scene timelines.
-4. A video with sound keeps it on the `<video>` (`data-has-audio="true"`, no `muted`). Use a separate `<audio>` for music, voiceover, replacement audio, J/L cuts, or audio detached in Studio. Silent footage and b-roll: `muted`.
-5. Sub-compositions use `data-composition-src="compositions/file.html"` to reference other HTML files
-6. Only deterministic logic — no `Date.now()`, no `Math.random()`, no network fetches
+- 配音：IndexTTS2，`vendor/index-tts/` + `voices/<pack>/sample.wav`
+- 一句一个 WAV，文本不变就复用缓存
+- 配乐：`tools/music_bed.py`
+- 混音：旁白 + 配乐侧链，−14 LUFS / −1.5 dBTP
+
+## 目录
+
+```
+engine/core/       渲染器（node）
+engine/styles/     66 份风格规范
+tools/pipeline.py  六阶段
+tools/lemo.py      渲染封装
+tools/say_lines.py IndexTTS2 批量配音
+tools/music_bed.py 配乐
+videos/<slug>/     source build film output qa
+voices/            音色样本
+vendor/index-tts/  模型
+```
+
+## 检查
+
+- 渲染前抽帧看：`python tools\lemo.py still <slug> 2 8 12`
+- 渲染后自动抽 3 帧到 `qa/`
+- 字幕时间和 `build/lines.json` 同源
+- 音轨响度用 ffmpeg `ebur128` 复核
+
+## 禁止
+
+- 不写模板拼装、section + GSAP 的分镜页
+- 不把配音合成为一条再靠 ASR 猜时间
+- 不在 `engine/`、`vendor/` 里改上游代码

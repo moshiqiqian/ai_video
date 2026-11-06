@@ -1,5 +1,24 @@
 # 更新日志
 
+## v3.1.0 · 2026-11-06
+
+只保留新链路，删掉旧实现；配音换成 IndexTTS2。
+
+### 删除
+
+- `tools/stage.py`、`make.py`、`transcribe.py`、`tts_edge.py`、`media.py`
+- `templates/`、`library/`、`assets/`、`.hyperframes/`
+- `hyperframes.json`、`hyperframes.lock.json`、根 `package.json`
+- 旧样片：玻尔兹曼机、工作流炫技、能力展示、lemo-demo
+- 阶段技能：video-brief / script / storyboard / assets / voice / render
+
+### 变更
+
+- `pipeline.py voice` 改用 IndexTTS2，一句一个 WAV，按句缓存
+- 新增 `tools/say_lines.py`：模型只加载一次，批量生成
+- README / INSTALL / AGENTS / PIPELINE 全部重写
+- `video-pipeline`、`deploy-ai-video` 技能重写
+
 ## v3.0.0 · 2026-11-06
 
 换成 render(t) 流水线：一个函数画全片，逐帧截图，逐句配音，带配乐混音。

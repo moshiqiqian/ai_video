@@ -1,7 +1,6 @@
-# 新流水线：六阶段 · render(t)
+# 流水线：六阶段 · render(t)
 
-旧链（`scenes.json` + HyperFrames + 模板）保留在 `tools/stage.py`，只用于老项目。
-新项目一律走这条。
+仓库里只有这一条链。旧的模板拼装链已删除，需要时从 git 历史取回。
 
 ## 六个阶段
 
@@ -17,8 +16,8 @@ brief → script → storyboard → voice → mix → render
 | brief | `source/brief.md`、`project.json` | 风格、时长、语言、fps |
 | script | `build/lines.json` | 按句拆分，一句一条 |
 | storyboard | `build/timeline.json` | 每句的起点、终点、时长 |
-| voice | `film/audio/*.mp3`、`voice.wav`、`film/lines.json` | 一句一个文件，按实际时长重排 |
-| mix | `film/audio/music.wav`、`mix.wav` | 配乐 + 旁白，侧链压低，−14 LUFS |
+| voice | `film/audio/*.wav`、`voice.wav`、`film/lines.json` | IndexTTS2 克隆音色，一句一个文件，按实际时长重排 |
+| mix | `film/audio/music.wav`、`mix.wav` | 程序化配乐 + 旁白，侧链压低，−14 LUFS |
 | render | `output/render.mp4`、`qa/` | 逐帧截图 + ffmpeg 合成 |
 
 ## 命令
@@ -28,7 +27,7 @@ python tools\pipeline.py start    <slug>
 python tools\pipeline.py brief    <slug> --style swiss-motion --duration 48 --language zh --topic "主题"
 python tools\pipeline.py script   <slug> --file source\script.txt
 python tools\pipeline.py storyboard <slug>
-python tools\pipeline.py voice    <slug>
+python tools\pipeline.py voice    <slug> --voice-pack xiaoxiao
 python tools\pipeline.py mix      <slug> --bpm 96
 python tools\pipeline.py render   <slug> --workers 4
 python tools\pipeline.py confirm  <slug> <stage>

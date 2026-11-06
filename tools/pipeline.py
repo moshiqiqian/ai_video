@@ -1,6 +1,6 @@
-"""六阶段新流水线：立项 → 文案 → 分镜 → 配音 → 混音 → 渲染。
+"""六阶段流水线：立项 → 文案 → 分镜 → 配音 → 混音 → 渲染。
 
-与旧的 stage.py 并存，但新项目默认走这条：
+仓库里只有这一条链：
     python tools/pipeline.py start <slug>
     python tools/pipeline.py brief <slug> --style swiss-motion --duration 48 --language zh
     python tools/pipeline.py script <slug> --file source/script.txt
@@ -79,6 +79,7 @@ def cmd_start(a) -> None:
         "duration": None,
         "language": "zh",
         "fps": 24,
+        "voice_pack": "xiaoxiao",
         "stages": {},
     }
     save(a.slug, proj)
@@ -172,6 +173,22 @@ def ffprobe_dur(p: Path) -> float:
     return float(out)
 
 
+def indextts_python() -> str:
+    import os
+    p = os.environ.get("INDEXTTS_PYTHON")
+    if p and Path(p).exists():
+        return p
+    here = Path(sys.executable)
+    # ...\anaconda3\envs\<env>\python.exe → ...\anaconda3\envs\indextts\python.exe
+    cand = here.parents[1] / "indextts" / "python.exe"
+    if cand.exists():
+        return str(cand)
+    cand = here.parents[1] / "indextts" / "bin" / "python"
+    if cand.exists():
+        return str(cand)
+    raise SystemExit("找不到 indextts 环境。设置 INDEXTTS_PYTHON 指向它的 python。")
+
+
 def cmd_voice(a) -> None:
     proj = load(a.slug)
     need(proj, "voice")
@@ -181,26 +198,31 @@ def cmd_voice(a) -> None:
     ad = d / "film" / "audio"
     ad.mkdir(parents=True, exist_ok=True)
 
-    import asyncio
-    import edge_tts
+    pack = a.voice_pack or proj.get("voice_pack") or "xiaoxiao"
+    if not (ROOT / "voices" / pack / "sample.wav").exists():
+        raise SystemExit(f"没有音色包：voices/{pack}/sample.wav")
+    proj["voice_pack"] = pack
 
-    async def speak():
-        for ln in lines:
-            mp3 = ad / f"{ln['id']}.mp3"
-            if not mp3.exists():
-                await edge_tts.Communicate(ln["text"], a.voice, rate=a.rate).save(str(mp3))
-            ln["dur"] = round(ffprobe_dur(mp3), 2)
+    subprocess.run([indextts_python(), str(TOOLS / "say_lines.py"), pack,
+                    str(d / "build" / "lines.json"), str(ad)], check=True)
+    durs = json.loads((d / "build" / "voice_durations.json").read_text(encoding="utf-8"))
 
-    asyncio.run(speak())
-
-    # 用实际时长重排；不够就整体后移，最后一句必须放得下
-    t = lines[0]["t0"] if lines[0]["t0"] is not None else 0.8
+    # 保留分镜排好的起点；只有真的挤到下一句时才顺延
+    t = 0.8
+    shifted = 0
     for i, ln in enumerate(lines):
-        ln["t0"] = round(t, 2)
-        ln["t1"] = round(t + ln["dur"] + 0.55, 2)
+        ln["dur"] = round(float(durs[ln["id"]]), 2)
+        planned = ln.get("t0")
+        start = max(t, planned if planned is not None else t)
+        if planned is not None and start > planned + 0.01:
+            shifted += 1
+        ln["t0"] = round(start, 2)
+        ln["t1"] = round(start + ln["dur"] + 0.55, 2)
         t = ln["t1"] + 0.35
-        if ln["t1"] > total - 0.3 and i == len(lines) - 1:
+        if ln["t1"] > total - 0.05 and i == len(lines) - 1:
             raise SystemExit(f"最后一句到 {ln['t1']}s，超过总长 {total}s。缩短文案或加时长。")
+    if shifted:
+        print(f"  注意：{shifted} 句因为上一句变长而顺延，检查画面时间轴")
 
     (d / "build" / "lines.json").write_text(json.dumps(lines, ensure_ascii=False, indent=2), encoding="utf-8")
     tl = json.loads((d / "build" / "timeline.json").read_text(encoding="utf-8"))
@@ -215,7 +237,7 @@ def cmd_voice(a) -> None:
     # 拼成一条 voice.wav
     inputs, filters = [], []
     for i, ln in enumerate(lines):
-        inputs += ["-i", str(ad / f"{ln['id']}.mp3")]
+        inputs += ["-i", str(ad / f"{ln['id']}.wav")]
         ms = int(ln["t0"] * 1000)
         filters.append(f"[{i}:a]aresample=48000,adelay={ms}|{ms}[a{i}]")
     mix = "".join(f"[a{i}]" for i in range(len(lines)))
@@ -226,7 +248,7 @@ def cmd_voice(a) -> None:
 
     mark(proj, "voice")
     save(a.slug, proj)
-    print(f"配音 {len(lines)} 句，voice.wav，最后一句到 {lines[-1]['t1']}s")
+    print(f"配音 IndexTTS2 · {pack} · {len(lines)} 句，最后一句到 {lines[-1]['t1']}s")
 
 
 def cmd_mix(a) -> None:
@@ -320,8 +342,7 @@ def main() -> None:
     p.set_defaults(fn=cmd_storyboard)
 
     p = sub.add_parser("voice")
-    p.add_argument("slug"); p.add_argument("--voice", default="zh-CN-XiaoxiaoNeural")
-    p.add_argument("--rate", default="+8%")
+    p.add_argument("slug"); p.add_argument("--voice-pack", default="xiaoxiao")
     p.set_defaults(fn=cmd_voice)
 
     p = sub.add_parser("mix"); p.add_argument("slug"); p.add_argument("--bpm", type=float, default=96)

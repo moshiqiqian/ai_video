@@ -53,8 +53,14 @@ videos/<slug>/film/
 - 66 个风格的 demo 引擎代码（体积大、各片专用）。这里只保留 `STYLE.md`，需要时从上游取。
 - 上游的 Python venv、Kokoro 模型、采样库。
 
-## 下一步
+## 现在谁在用
 
-1. 把 `stage.py` 的 brief/script/storyboard 产物改成 `lines.json` + `timeline.json`
-2. 按风格补引擎（先做 ink-wash、swiss-motion、dataviz）
-3. 接上配乐/音效/混音与 readcheck、cuecheck
+`tools/pipeline.py` 负责六个阶段，`tools/lemo.py` 负责渲染。
+配音用本机的 IndexTTS2，不用上游的 Kokoro / edge-tts。
+
+## 还没接的
+
+- 词级时间戳与逐句 ASR 校验
+- 按片子写谱（现在是通用配乐床）
+- 程序化音效（`window.EV`）
+- `readcheck` / `cuecheck`

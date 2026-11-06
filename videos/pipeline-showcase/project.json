@@ -21,5 +21,6 @@
     "voice": true,
     "mix": true,
     "render": true
-  }
+  },
+  "voice_pack": "xiaoxiao"
 }
