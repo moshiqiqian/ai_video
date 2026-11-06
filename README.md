@@ -1,13 +1,15 @@
 # AI-v · 短视频生成工程
 
-**当前版本 v2.0.0**（六阶段流水线）：见 [CHANGELOG.md](CHANGELOG.md)
+**当前版本 v3.0.0**（render(t) 流水线）：见 [PIPELINE.md](PIPELINE.md)、[CHANGELOG.md](CHANGELOG.md)
 
-用**文字**生成短视频：写一段文案 + 几个画面描述，自动配音、自动排版、自动渲染成 MP4。
+用**文字**生成短视频：一句文案，六步确认，自动配音、配乐、渲染成 MP4。
 全程本机运行，不依赖任何付费 API。
 
 ```
-文案 → 配音 → 时间轴 → 画面(HTML) → Chrome 逐帧截图 → MP4
+文案 → 逐句配音 → 时间轴 → render(t) 画面 → Chrome 逐帧截图 → 混音 → MP4
 ```
+
+> v3 换掉了旧的模板拼装链。老项目仍可用 `tools/stage.py`；新项目用 `tools/pipeline.py`。
 
 ---
 

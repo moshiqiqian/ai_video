@@ -1,5 +1,25 @@
 # 更新日志
 
+## v3.0.0 · 2026-11-06
+
+换成 render(t) 流水线：一个函数画全片，逐帧截图，逐句配音，带配乐混音。
+
+### 新增
+
+- **engine/**：Lemo 渲染链（MIT），`core/` + 66 份 `STYLE.md`
+- **tools/lemo.py**：doctor / still / render，自动找 Chrome
+- **tools/pipeline.py**：六阶段新流水线
+  - brief → script → storyboard → voice → mix → render
+  - 逐句 TTS、按实际时长重排、侧链混音到 −14 LUFS
+  - 上游改动自动标记下游 `stale`
+- **tools/music_bed.py**：程序化配乐床
+- **videos/pipeline-showcase**：48 秒流程图样片（1152 帧）
+
+### 变更
+
+- 新项目默认 `pipeline.py`；旧 `stage.py` 只服务老项目
+- 画面从「分镜 section + GSAP」改为「单页 `render(t)`」
+
 ## v2.1.0 · 2026-11-06
 
 把「权宜之计」拆成可复用的层。
