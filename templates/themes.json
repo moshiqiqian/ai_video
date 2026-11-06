@@ -1,0 +1,34 @@
+{
+  "dark-teal": {
+    "label": "深青（默认）",
+    "bg": "#0a0e13",
+    "ink": "#f4f7fb",
+    "muted": "#8b9bb0",
+    "accent": "#5eead4",
+    "sub_bg": "rgba(6, 10, 16, 0.62)"
+  },
+  "warm-paper": {
+    "label": "暖纸（浅色）",
+    "bg": "#f6f1e7",
+    "ink": "#1f1b16",
+    "muted": "#6b6155",
+    "accent": "#b4531f",
+    "sub_bg": "rgba(255, 250, 240, 0.85)"
+  },
+  "news-red": {
+    "label": "新闻红",
+    "bg": "#101114",
+    "ink": "#ffffff",
+    "muted": "#9aa3ad",
+    "accent": "#e11d48",
+    "sub_bg": "rgba(8, 8, 10, 0.72)"
+  },
+  "mono-ink": {
+    "label": "单色墨",
+    "bg": "#0e0e0e",
+    "ink": "#f2f2f2",
+    "muted": "#8a8a8a",
+    "accent": "#d4d4d4",
+    "sub_bg": "rgba(0, 0, 0, 0.66)"
+  }
+}

@@ -33,30 +33,20 @@ ROOT = Path(__file__).resolve().parent.parent
 VIDEOS = ROOT / "videos"
 DEFAULT_FONT = '"Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", sans-serif'
 
-# 主题：改一个词就能换整体配色
-THEMES = {
-    "dark-teal": {
-        "label": "深青（默认）",
-        "bg": "#0a0e13", "ink": "#f4f7fb", "muted": "#8b9bb0",
-        "accent": "#5eead4", "sub_bg": "rgba(6, 10, 16, 0.62)",
-    },
-    "warm-paper": {
-        "label": "暖纸（浅色）",
-        "bg": "#f6f1e7", "ink": "#1f1b16", "muted": "#6b6155",
-        "accent": "#b4531f", "sub_bg": "rgba(255, 250, 240, 0.85)",
-    },
-    "news-red": {
-        "label": "新闻红",
-        "bg": "#101114", "ink": "#ffffff", "muted": "#9aa3ad",
-        "accent": "#e11d48", "sub_bg": "rgba(8, 8, 10, 0.72)",
-    },
-    "mono-ink": {
-        "label": "单色墨",
-        "bg": "#0e0e0e", "ink": "#f2f2f2", "muted": "#8a8a8a",
-        "accent": "#d4d4d4", "sub_bg": "rgba(0, 0, 0, 0.66)",
-    },
-}
+TPL = ROOT / "templates"
 DEFAULT_THEME = "dark-teal"
+
+# 主题与样式从 templates/ 读取，代码里不再硬编码
+THEMES = json.loads((TPL / "themes.json").read_text(encoding="utf-8"))
+CSS = (TPL / "base.css").read_text(encoding="utf-8")
+
+
+def render_block(name: str, **kw) -> str:
+    """从 templates/blocks/<name>.html 渲染一个版式片段。"""
+    tpl = (TPL / "blocks" / f"{name}.html").read_text(encoding="utf-8")
+    for k, v in kw.items():
+        tpl = tpl.replace("{{" + k + "}}", str(v))
+    return tpl
 
 
 def resolve_theme(name: str = None, overrides: dict = None) -> dict:
@@ -206,45 +196,6 @@ def pick_boundaries(pauses, scenes, total: float, transcript=None, min_scene: fl
 
 # ---------- HTML ----------
 
-CSS = """
-      @font-face { font-family: "Microsoft YaHei UI"; src: local("Microsoft YaHei UI"); }
-      @font-face { font-family: "Microsoft YaHei"; src: local("Microsoft YaHei"); }
-      @font-face { font-family: "PingFang SC"; src: local("PingFang SC"); }
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      html, body {
-        width: %(W)dpx; height: %(H)dpx; overflow: hidden;
-        background: %(BG)s; color: %(INK)s; font-family: %(FONT)s;
-      }
-      #root {
-        position: relative; width: 100%%; height: 100%%;
-        background: radial-gradient(1100px 700px at 50%% 42%%, %(GLOW)s, transparent 70%%), %(BG)s;
-      }
-      .clip {
-        position: absolute; inset: 0; display: flex; flex-direction: column;
-        align-items: center; justify-content: center; text-align: center; padding: 0 120px;
-      }
-      .kicker { font-size: 30px; letter-spacing: .32em; color: %(ACCENT)s; margin-bottom: 34px; }
-      h1 { font-size: 120px; font-weight: 700; letter-spacing: -.02em; line-height: 1.12; }
-      .sub { font-size: 40px; color: %(MUTED)s; margin-top: 40px; letter-spacing: .04em; }
-      .rows { display: flex; flex-direction: column; gap: 44px; }
-      .row { display: flex; align-items: center; gap: 32px; font-size: 58px; font-weight: 500; }
-      .row .mark { font-size: 50px; color: %(ACCENT)s; flex: none; }
-      .quote { font-size: 64px; line-height: 1.5; max-width: 1500px; color: %(INK)s; }
-      .accent { color: %(ACCENT)s; }
-      .figwrap { display: flex; flex-direction: column; align-items: center; gap: 26px; padding-bottom: 150px; }
-      .fig { max-width: 1420px; max-height: 680px; object-fit: contain; border-radius: 18px; }
-      .figcap { font-size: 38px; color: %(MUTED)s; letter-spacing: .02em; }
-      .vid { max-width: 1620px; max-height: 860px; border-radius: 18px; }
-      .subs { position: absolute; left: 0; right: 0; bottom: 84px; z-index: 10; text-align: center; }
-      .cue {
-        position: absolute; left: 50%%; transform: translateX(-50%%); bottom: 0;
-        max-width: 1500px; font-size: 40px; line-height: 1.45; font-weight: 500;
-        color: %(INK)s; opacity: 0;
-        text-shadow: 0 2px 18px rgba(0,0,0,0.55);
-        padding: 8px 26px; border-radius: 12px;
-        background: %(SUB_BG)s;
-      }
-"""
 
 
 def esc(s: str) -> str:
@@ -401,9 +352,10 @@ def build_html(scenes, bounds, audio_rel, total, width, height, cues=None, media
         kind = sc.get("type", "title")
 
         if kind == "title":
-            body = (f'<div id="k{i}" class="kicker">{esc(sc.get("kicker",""))}</div>\n'
-                    f'        <h1 id="t{i}">{esc(sc.get("title",""))}</h1>\n'
-                    f'        <div id="sub{i}" class="sub">{esc(sc.get("sub",""))}</div>')
+            body = render_block("title", i=i,
+                                kicker=esc(sc.get("kicker", "")),
+                                title=esc(sc.get("title", "")),
+                                sub=esc(sc.get("sub", "")))
             tl.append(f'      tl.from("#k{i}", {{ opacity: 0, y: 18, duration: 0.45, ease: "power2.out" }}, {s+0.15:.2f})')
             tl.append(f'        .from("#t{i}", {{ y: 56, duration: 0.75, ease: "power3.out" }}, {s+0.3:.2f})')
             tl.append(f'        .from("#sub{i}", {{ opacity: 0, duration: 0.5, ease: "power2.out" }}, {s+0.8:.2f})')
@@ -417,14 +369,14 @@ def build_html(scenes, bounds, audio_rel, total, width, height, cues=None, media
             items = "\n".join(
                 f'          <div id="r{i}_{j}" class="row"><span class="mark">{esc(m(j))}</span>'
                 f'<span>{esc(r)}</span></div>' for j, r in enumerate(rows))
-            body = f'        <div class="rows">\n{items}\n        </div>'
+            body = render_block("list", items=items)
             gap = max(e - s - 1.0, 0.6) / max(len(rows), 1)
             for j in range(len(rows)):
                 tl.append(f'      tl.from("#r{i}_{j}", {{ opacity: 0, duration: 0.4, ease: "power2.out" }}, {s + 0.2 + j * gap:.2f})')
             tl.append(f'        .to("#s{i+1} .rows", {{ opacity: 0, duration: 0.35, ease: "power2.in" }}, {max(s+0.3, e-0.45):.2f});')
 
         elif kind == "quote":
-            body = f'        <div id="q{i}" class="quote">{esc(sc.get("text",""))}</div>'
+            body = render_block("quote", i=i, text=esc(sc.get("text", "")))
             tl.append(f'      tl.from("#q{i}", {{ opacity: 0, y: 30, duration: 0.6, ease: "power2.out" }}, {s+0.2:.2f})')
             tl.append(f'        .to("#q{i}", {{ opacity: 0, duration: 0.35, ease: "power2.in" }}, {max(s+0.3, e-0.45):.2f});')
 
@@ -433,10 +385,9 @@ def build_html(scenes, bounds, audio_rel, total, width, height, cues=None, media
                 raise SystemExit(f"第 {i+1} 个镜头用了 image，但没有素材库")
             url = media_url(sc.get("src", ""))
             cap = esc(sc.get("caption", ""))
-            body = (f'        <div class="figwrap">\n'
-                    f'          <img id="fig{i}" class="fig" src="{url}" />\n'
-                    + (f'          <div id="cap{i}" class="figcap">{cap}</div>\n' if cap else "")
-                    + '        </div>')
+            caption_block = (f'          <div id="cap{i}" class="figcap">{cap}</div>'
+                             if cap else "")
+            body = render_block("image", i=i, src=url, caption=caption_block)
             tl.append(f'      tl.fromTo("#fig{i}", {{ opacity: 0, scale: 0.96 }}, {{ opacity: 1, scale: 1, duration: 0.6, ease: "power3.out" }}, {s+0.15:.2f})')
             if cap:
                 tl.append(f'        .from("#cap{i}", {{ opacity: 0, duration: 0.45, ease: "power2.out" }}, {s+0.55:.2f})')
@@ -447,8 +398,7 @@ def build_html(scenes, bounds, audio_rel, total, width, height, cues=None, media
                 raise SystemExit(f"第 {i+1} 个镜头用了 video，但没有素材库")
             url = media_url(sc.get("src", ""))
             dur = e - s
-            body = (f'        <video id="vid{i}" class="vid" src="{url}" muted playsinline\n'
-                    f'               data-start="0" data-duration="{dur:.2f}"></video>')
+            body = render_block("video", i=i, src=url, dur=f"{dur:.2f}")
             tl.append(f'      tl.fromTo("#vid{i}", {{ opacity: 0 }}, {{ opacity: 1, duration: 0.4, ease: "power2.out" }}, {s+0.1:.2f})')
             tl.append(f'        .to("#s{i+1}", {{ opacity: 0, duration: 0.3, ease: "power2.in" }}, {max(s+0.3, e-0.35):.2f});')
 
@@ -459,8 +409,7 @@ def build_html(scenes, bounds, audio_rel, total, width, height, cues=None, media
                 title = title.replace(accent, f'<span class="accent">{esc(accent)}</span>', 1)
             else:
                 title = esc(title)
-            body = (f'        <h1 id="t{i}" class="big">{title}</h1>\n'
-                    f'        <div id="sub{i}" class="sub">{esc(sc.get("sub",""))}</div>')
+            body = render_block("ending", i=i, title=title, sub=esc(sc.get("sub", "")))
             tl.append(f'      tl.fromTo("#t{i}", {{ opacity: 0, scale: 0.94 }}, {{ opacity: 1, scale: 1, duration: 0.65, ease: "power3.out" }}, {s+0.2:.2f})')
             tl.append(f'        .from("#sub{i}", {{ opacity: 0, duration: 0.5, ease: "power2.out" }}, {s+0.7:.2f})')
             tl.append(f'        .to("#t{i}", {{ scale: 1.03, duration: {max(e - s - 1.0, 0.6):.2f}, ease: "none" }}, {s+1.0:.2f});')
@@ -641,7 +590,11 @@ def cmd_build(slug: str, args) -> None:
 
     if args.render:
         npx = shutil.which("npx") or "npx.cmd"
-        subprocess.run([npx, "--yes", "hyperframes@0.9.0", "check", "."], cwd=ROOT)
+        # hyperframes check 只认项目根目录的 index.html；画面文件在 build/ 时跳过
+        if (ROOT / "index.html").exists():
+            subprocess.run([npx, "--yes", "hyperframes@0.9.0", "check", "."], cwd=ROOT)
+        else:
+            print("      （跳过 hyperframes check：画面文件在 build/，check 只支持根目录）")
         out = d / "output" / "render.mp4"
         out.parent.mkdir(parents=True, exist_ok=True)
         comp = html_path.relative_to(ROOT).as_posix()

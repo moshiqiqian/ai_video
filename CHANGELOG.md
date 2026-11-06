@@ -1,5 +1,25 @@
 # 更新日志
 
+## v2.1.0 · 2026-11-06
+
+把「权宜之计」拆成可复用的层。
+
+### 新增
+
+- **	emplates/**：版式与样式从代码里剥离
+  - ase.css、	hemes.json、locks/*.html
+  - make.py 变成装配器：读模板 → 填占位符 → 拼 HTML
+- **library/**：通用块与效果库（项目级，独立于每支视频的 source/）
+  - 11 个 block：data-chart / bar-chart-race / code-typing / exploded-stack / 转场等
+  - 13 个 component：blur-in / bottom-up-letters / caption-clip-wipe / aurora-drift / camera-shake 等
+  - hyperframes.json 安装路径改为 library/blocks、library/components
+- 模板与库的说明文档：	emplates/README.md、library/README.md
+
+### 变更
+
+- 主题与 CSS 不再写死在 	ools/make.py
+- hyperframes check 在画面文件位于 uild/ 时自动跳过（check 只认根目录 index.html）
+
 ## v2.0.0 · 2026-11-05
 
 六阶段流水线 + 每支视频独立工程。

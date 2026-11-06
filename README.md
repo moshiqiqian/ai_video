@@ -243,6 +243,15 @@ AI-v\
 ├── voices\                 声音库（可复用音色）
 │   └── xiaoxiao\sample.wav
 │
+├── templates\              可复用版式与主题
+│   ├── base.css
+│   ├── themes.json
+│   └── blocks\
+│
+├── library\                通用块与效果（官方 registry 下载）
+│   ├── blocks\
+│   └── components\
+│
 ├── assets\vendor\          gsap.min.js（本地，不依赖 CDN）
 │
 ├── tools\

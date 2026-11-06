@@ -2,11 +2,133 @@
   "$schema": "https://hyperframes.heygen.com/schema/hyperframes.json",
   "registry": "https://raw.githubusercontent.com/heygen-com/hyperframes/main/registry",
   "paths": {
-    "blocks": "compositions",
-    "components": "compositions/components",
-    "assets": "assets"
+    "blocks": "library/blocks",
+    "components": "library/components",
+    "assets": "library/assets"
   },
   "media": {
     "autoProxy": true
-  }
+  },
+  "registryItems": [
+    {
+      "name": "data-chart",
+      "type": "hyperframes:block",
+      "target": "library/blocks/data-chart.html"
+    },
+    {
+      "name": "bar-chart-race",
+      "type": "hyperframes:block",
+      "target": "library/blocks/bar-chart-race.html"
+    },
+    {
+      "name": "code-typing",
+      "type": "hyperframes:block",
+      "target": "library/blocks/code-typing.html"
+    },
+    {
+      "name": "code-snippet-dark-2026",
+      "type": "hyperframes:block",
+      "target": "library/blocks/code-snippet-dark-2026.html"
+    },
+    {
+      "name": "exploded-stack",
+      "type": "hyperframes:block",
+      "target": "library/blocks/exploded-stack.html"
+    },
+    {
+      "name": "camcorder-hud",
+      "type": "hyperframes:block",
+      "target": "library/blocks/camcorder-hud.html"
+    },
+    {
+      "name": "ai-answer-rank",
+      "type": "hyperframes:block",
+      "target": "library/blocks/ai-answer-rank.html"
+    },
+    {
+      "name": "editorial-flash-overlay",
+      "type": "hyperframes:block",
+      "target": "library/blocks/editorial-flash-overlay.html"
+    },
+    {
+      "name": "chromatic-radial-split",
+      "type": "hyperframes:block",
+      "target": "library/blocks/chromatic-radial-split.html"
+    },
+    {
+      "name": "flash-through-white",
+      "type": "hyperframes:block",
+      "target": "library/blocks/flash-through-white.html"
+    },
+    {
+      "name": "cinematic-zoom",
+      "type": "hyperframes:block",
+      "target": "library/blocks/cinematic-zoom.html"
+    },
+    {
+      "name": "blur-in",
+      "type": "hyperframes:component",
+      "target": "library/components/blur-in.html"
+    },
+    {
+      "name": "bottom-up-letters",
+      "type": "hyperframes:component",
+      "target": "library/components/bottom-up-letters.html"
+    },
+    {
+      "name": "caption-editorial-emphasis",
+      "type": "hyperframes:component",
+      "target": "library/components/caption-editorial-emphasis.html"
+    },
+    {
+      "name": "caption-clip-wipe",
+      "type": "hyperframes:component",
+      "target": "library/components/caption-clip-wipe.html"
+    },
+    {
+      "name": "aurora-drift",
+      "type": "hyperframes:component",
+      "target": "library/components/aurora-drift.html"
+    },
+    {
+      "name": "beat-pulse-background",
+      "type": "hyperframes:component",
+      "target": "library/components/beat-pulse-background.html"
+    },
+    {
+      "name": "camera-shake",
+      "type": "hyperframes:component",
+      "target": "library/components/camera-shake.html"
+    },
+    {
+      "name": "agent-cursor",
+      "type": "hyperframes:component",
+      "target": "library/components/agent-cursor.html"
+    },
+    {
+      "name": "badge-pop",
+      "type": "hyperframes:component",
+      "target": "library/components/badge-pop.html"
+    },
+    {
+      "name": "beat-accent",
+      "type": "hyperframes:component",
+      "target": "library/components/beat-accent.html"
+    },
+    {
+      "name": "before-after-wipe",
+      "type": "hyperframes:component",
+      "target": "library/components/before-after-wipe.html"
+    },
+    {
+      "name": "browser-device-stage",
+      "type": "hyperframes:component",
+      "target": "library/components/browser-device-stage.html"
+    },
+    {
+      "name": "animated-bar-chart",
+      "type": "hyperframes:component",
+      "target": "library/components/animated-bar-chart.html"
+    }
+  ]
 }
