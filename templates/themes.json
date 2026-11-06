@@ -30,5 +30,13 @@
     "muted": "#8a8a8a",
     "accent": "#d4d4d4",
     "sub_bg": "rgba(0, 0, 0, 0.66)"
+  },
+  "ink-wash": {
+    "label": "水墨",
+    "bg": "#f2ece1",
+    "ink": "#1b1916",
+    "muted": "#6f665c",
+    "accent": "#a63a2e",
+    "sub_bg": "rgba(242,236,225,0.9)"
   }
 }

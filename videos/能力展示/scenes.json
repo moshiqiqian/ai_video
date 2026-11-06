@@ -1,0 +1,82 @@
+{
+  "scenes": [
+    {
+      "type": "ink",
+      "start_at_sentence": 1,
+      "text": "山色空蒙",
+      "seal": "山",
+      "sub": "Ink Wash · Drawn in SVG"
+    },
+    {
+      "type": "chart",
+      "start_at_sentence": 5,
+      "title": "数据会生长",
+      "unit": "%",
+      "data": [
+        {
+          "l": "排版",
+          "v": 96
+        },
+        {
+          "l": "动效",
+          "v": 82
+        },
+        {
+          "l": "图表",
+          "v": 74
+        },
+        {
+          "l": "音频",
+          "v": 68
+        }
+      ]
+    },
+    {
+      "type": "wave",
+      "start_at_sentence": 9,
+      "title": "声音也有形状",
+      "sub": "Signal · Bars follow the beat"
+    },
+    {
+      "type": "code",
+      "start_at_sentence": 10,
+      "title": "hyperframes — registry",
+      "lines": [
+        {
+          "k": "cmd",
+          "t": "hyperframes add data-chart"
+        },
+        {
+          "k": "out",
+          "t": "→ library/blocks/data-chart.html"
+        },
+        {
+          "k": "cmd",
+          "t": "hyperframes add code-typing"
+        },
+        {
+          "k": "out",
+          "t": "→ library/blocks/code-typing.html"
+        },
+        {
+          "k": "ok",
+          "t": "2 blocks installed · ready to mount"
+        }
+      ]
+    },
+    {
+      "type": "ink",
+      "start_at_sentence": 12,
+      "text": "水光潋滟",
+      "seal": "墨",
+      "sub": "Second Movement"
+    },
+    {
+      "type": "ending",
+      "start_at_sentence": 13,
+      "title": "代码能画的，比想象的多",
+      "accent": "比想象的多",
+      "sub": "HTML · SVG · GSAP"
+    }
+  ]
+}

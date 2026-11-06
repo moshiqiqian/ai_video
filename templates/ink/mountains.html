@@ -1,0 +1,23 @@
+        <div class="ink">
+          <svg viewBox="0 0 1920 1080" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="mtn-a" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#2b2b28" stop-opacity=".55" />
+                <stop offset="1" stop-color="#2b2b28" stop-opacity=".05" />
+              </linearGradient>
+              <radialGradient id="mist-a">
+                <stop offset="0" stop-color="#ffffff" stop-opacity=".9" />
+                <stop offset="1" stop-color="#ffffff" stop-opacity="0" />
+              </radialGradient>
+            </defs>
+            <circle id="{{id}}-sun" cx="1500" cy="250" r="84" fill="{{accent}}" opacity=".85" />
+            <path id="{{id}}-m1" d="M0,780 C220,520 380,700 560,560 C760,410 900,700 1120,620 C1340,540 1500,780 1700,670 L1920,770 L1920,1080 L0,1080 Z" fill="url(#mtn-a)" />
+            <path id="{{id}}-m2" d="M0,890 C260,760 420,890 640,790 C860,690 1020,870 1240,810 C1460,750 1680,890 1920,830 L1920,1080 L0,1080 Z" fill="#2b2b28" opacity=".16" />
+            <path id="{{id}}-m3" d="M0,985 C300,935 520,1005 780,955 C1040,905 1320,1005 1560,965 C1720,935 1840,975 1920,955 L1920,1080 L0,1080 Z" fill="#2b2b28" opacity=".1" />
+            <ellipse id="{{id}}-mist1" cx="620" cy="830" rx="430" ry="90" fill="url(#mist-a)" />
+            <ellipse id="{{id}}-mist2" cx="1420" cy="890" rx="540" ry="110" fill="url(#mist-a)" />
+          </svg>
+          <div id="{{id}}-sub" class="ink-sub">{{sub}}</div>
+          <div id="{{id}}-text" class="ink-text">{{text}}</div>
+          <div id="{{id}}-seal" class="ink-seal">{{seal}}</div>
+        </div>

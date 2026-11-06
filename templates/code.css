@@ -1,0 +1,20 @@
+      /* ---------- 终端 / 代码 ---------- */
+      .term { position: absolute; inset: 0; display: grid; place-items: center; }
+      .term-win { width: 1180px; border: 1px solid rgba(255,255,255,.14); border-radius: 14px;
+        overflow: hidden; background: #0b0f16; box-shadow: 0 40px 90px rgba(0,0,0,.45); }
+      .term-bar { display: flex; align-items: center; gap: 10px; padding: 16px 20px;
+        background: #121824; border-bottom: 1px solid rgba(255,255,255,.08); }
+      .term-dot { width: 12px; height: 12px; border-radius: 50%%; background: #3a4252; }
+      .term-dot.r { background: #e05561; }
+      .term-dot.y { background: #d9a13b; }
+      .term-dot.g { background: #4f9d69; }
+      .term-title { margin-left: 12px; font-size: 16px; color: #7c8798; letter-spacing: .08em; }
+      .term-body { padding: 34px 40px 40px; font-family: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+        font-size: 25px; line-height: 1.85; color: #cfd8e3; }
+      .term-line { white-space: pre; }
+      .term-prompt { color: #6fb3ff; margin-right: 12px; }
+      .term-cmd { color: #e8eef7; }
+      .term-out { color: #7f8b9d; }
+      .term-ok { color: #63c98a; }
+      .term-caret { display: inline-block; width: 12px; height: 26px; margin-left: 4px;
+        background: #cfd8e3; vertical-align: -3px; }

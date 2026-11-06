@@ -38,7 +38,69 @@ DEFAULT_THEME = "dark-teal"
 
 # 主题与样式从 templates/ 读取，代码里不再硬编码
 THEMES = json.loads((TPL / "themes.json").read_text(encoding="utf-8"))
-CSS = (TPL / "base.css").read_text(encoding="utf-8")
+CSS = ((TPL / "base.css").read_text(encoding="utf-8") + "\n"
+       + (TPL / "ink.css").read_text(encoding="utf-8") + "\n"
+       + (TPL / "code.css").read_text(encoding="utf-8") + "\n"
+       + (TPL / "wave.css").read_text(encoding="utf-8"))
+
+
+def render_ink(sc: dict, i: int) -> str:
+    html = (TPL / "ink" / "mountains.html").read_text(encoding="utf-8")
+    for k, v in (("id", f"ink{i}"), ("text", esc(sc.get("text", ""))),
+                 ("sub", esc(sc.get("sub", ""))), ("seal", esc(sc.get("seal", ""))),
+                 ("accent", "#a63a2e")):
+        html = html.replace("{{" + k + "}}", str(v))
+    return html
+
+
+def render_chart(sc: dict, i: int) -> tuple[str, list]:
+    data = sc.get("data") or []
+    unit = sc.get("unit", "")
+    vmax = max([float(d.get("v", 0)) for d in data] + [1])
+    bars, anim = [], []
+    for j, d in enumerate(data):
+        h = int(420 * float(d.get("v", 0)) / vmax)
+        bid = f"bar{i}_{j}"
+        bars.append(
+            f'          <div class="bar-wrap">'
+            f'<div class="bar-val"><span id="{bid}-n">0</span>{esc(unit)}</div>'
+            f'<div id="{bid}" class="bar" style="height:{h}px"></div>'
+            f'<div class="bar-lbl">{esc(d.get("l", ""))}</div>'
+            f'</div>')
+        anim.append((bid, float(d.get("v", 0))))
+    html = (
+        f'        <div class="chart">\n'
+        f'          <div class="chart-title">{esc(sc.get("title", ""))}</div>\n'
+        f'          <div class="chart-axis"></div>\n'
+        + "\n".join(bars) + "\n        </div>")
+    return html, anim
+
+
+def render_code(sc: dict, i: int) -> tuple[str, list]:
+    tpl = (TPL / "code" / "terminal.html").read_text(encoding="utf-8")
+    lines = []
+    for j, ln in enumerate(sc.get("lines", [])):
+        kind = ln.get("k", "out")
+        cls = {"cmd": "term-cmd", "ok": "term-ok"}.get(kind, "term-out")
+        prompt = '<span class="term-prompt">$</span>' if kind == "cmd" else ""
+        lines.append(f'              <div id="code{i}_l{j}" class="term-line {cls}">{prompt}{esc(ln.get("t", ""))}</div>')
+    html = (tpl.replace("{{id}}", f"code{i}")
+                .replace("{{title}}", esc(sc.get("title", "terminal")))
+                .replace("{{lines}}", "\n".join(lines)))
+    return html, [f"code{i}_l{j}" for j in range(len(lines))]
+
+
+def render_wave(sc: dict, i: int) -> tuple[str, list]:
+    import math
+    bars = []
+    for j in range(44):
+        h = 190 + int(300 * abs(math.sin(j * 0.7 + 1.2)) + 90 * abs(math.sin(j * 1.9)))
+        bars.append(f'<div id="wv{i}_{j}" class="wbar" style="height:{h}px"></div>')
+    html = (f'        <div class="wave">\n'
+            f'          <div class="wave-title">{esc(sc.get("title", ""))}</div>\n'
+            f'          <div class="wave-sub">{esc(sc.get("sub", ""))}</div>\n'
+            + "\n".join(bars) + "\n        </div>")
+    return html, [f"wv{i}_{j}" for j in range(44)]
 
 
 def render_block(name: str, **kw) -> str:
@@ -54,7 +116,7 @@ PPT = TPL / "ppt"
 
 def render_ppt(blocks: list, idx: int):
     """渲染 PPT 风格的多块版式，返回 (html, [(block_id, order)])。"""
-    parts, anim = [], []
+    parts, anim, counters = [], [], []
     for j, b in enumerate(blocks):
         name = b.get("block")
         bid = f"ppt{idx}_{j}"
@@ -77,11 +139,16 @@ def render_ppt(blocks: list, idx: int):
                 for c in b.get("items", []))
             html = html.replace("{{cards}}", cards)
         elif name == "stats":
-            items = "".join(
-                f'<div class="ppt-stat"><b>{esc(str(it.get("n", "")))}</b>'
-                f'<span>{esc(it.get("l", ""))}</span></div>'
-                for it in b.get("items", []))
-            html = html.replace("{{items}}", items)
+            segs = []
+            for k, it in enumerate(b.get("items", [])):
+                segs.append(f'<div class="ppt-stat"><b id="{bid}-n{k}">0</b>'
+                            f'<span>{esc(it.get("l", ""))}</span></div>')
+                try:
+                    v = float(str(it.get("n", "0")).replace("%", "").replace("+", ""))
+                except ValueError:
+                    v = 0.0
+                counters.append((f"{bid}-n{k}", v))
+            html = html.replace("{{items}}", "".join(segs))
         elif name == "pipeline":
             segs = []
             for k, s in enumerate(b.get("steps", [])):
@@ -95,7 +162,7 @@ def render_ppt(blocks: list, idx: int):
 
         parts.append(html.replace("{{id}}", bid))
         anim.append((bid, j))
-    return "\n".join(parts), anim
+    return "\n".join(parts), anim, counters
 
 
 def resolve_theme(name: str = None, overrides: dict = None) -> dict:
@@ -443,11 +510,61 @@ def build_html(scenes, bounds, audio_rel, total, width, height, cues=None, media
             tl.append(f'        .to("#s{i+1}", {{ opacity: 0, duration: 0.35, ease: "power2.in" }}, {max(s+0.3, e-0.4):.2f});')
 
         elif kind == "editorial":
-            body, anim = render_ppt(sc.get("blocks", []), i)
+            body, anim, counters = render_ppt(sc.get("blocks", []), i)
             body = f'        <div class="ppt">\n{body}\n        </div>'
             for bid, j in anim:
                 tl.append(f'      tl.from("#{bid}", {{ opacity: 0, y: 26, duration: 0.5, ease: "power2.out" }}, {s + 0.2 + j * 0.35:.2f})')
+            for cid, val in counters:
+                tl.append(f'        .to("#{cid}", {{ innerText: {val:g}, snap: {{ innerText: 1 }}, duration: 0.9, ease: "power2.out" }}, {s + 0.6:.2f})')
             tl.append(f'        .to("#s{i+1}", {{ opacity: 0, duration: 0.4, ease: "power2.in" }}, {max(s + 0.4, e - 0.45):.2f});')
+
+        elif kind == "ink":
+            body = render_ink(sc, i)
+            acc = "#a63a2e"
+            tl.append(f'      tl.from("#ink{i}-m2", {{ opacity: 0, y: 30, duration: 0.9, ease: "power2.out" }}, {s+0.1:.2f})')
+            tl.append(f'        .from("#ink{i}-m1", {{ opacity: 0, y: 40, duration: 1.0, ease: "power2.out" }}, {s+0.25:.2f})')
+            tl.append(f'        .from("#ink{i}-m3", {{ opacity: 0, y: 24, duration: 0.9, ease: "power2.out" }}, {s+0.45:.2f})')
+            tl.append(f'        .from("#ink{i}-mist1", {{ opacity: 0, scale: 0.9, duration: 1.0, ease: "sine.out" }}, {s+0.6:.2f})')
+            tl.append(f'        .from("#ink{i}-mist2", {{ opacity: 0, scale: 0.9, duration: 1.0, ease: "sine.out" }}, {s+0.7:.2f})')
+            tl.append(f'        .from("#ink{i}-sun", {{ opacity: 0, scale: 0.6, transformOrigin: "center", duration: 0.8, ease: "power2.out" }}, {s+0.5:.2f})')
+            tl.append(f'        .from("#ink{i}-text", {{ opacity: 0, y: 26, duration: 0.8, ease: "power2.out" }}, {s+0.9:.2f})')
+            tl.append(f'        .from("#ink{i}-seal", {{ opacity: 0, scale: 1.8, rotate: -18, duration: 0.35, ease: "back.out(2)" }}, {s+1.4:.2f})')
+            tl.append(f'        .fromTo("#ink{i} svg", {{ scale: 1 }}, {{ scale: 1.05, duration: {max(e-s,1.0):.2f}, ease: "none" }}, {s:.2f})')
+            tl.append(f'        .fromTo("#ink{i}-mist1", {{ x: -30 }}, {{ x: 30, duration: {max(e-s,1.0):.2f}, ease: "sine.inOut" }}, {s:.2f})')
+            tl.append(f'        .to("#s{i+1}", {{ opacity: 0, duration: 0.5, ease: "power2.in" }}, {max(s+0.6, e-0.6):.2f});')
+
+        elif kind == "chart":
+            body, bars = render_chart(sc, i)
+            for j, (bid, val) in enumerate(bars):
+                t0 = s + 0.35 + j * 0.28
+                tl.append(f'      tl.fromTo("#{bid}", {{ scaleY: 0 }}, {{ scaleY: 1, duration: 0.55, ease: "power3.out" }}, {t0:.2f})')
+                tl.append(f'        .to("#{bid}-n", {{ innerText: {val:g}, snap: {{ innerText: 1 }}, duration: 0.7, ease: "power2.out" }}, {t0+0.15:.2f})')
+            tl.append(f'        .to("#s{i+1}", {{ opacity: 0, duration: 0.4, ease: "power2.in" }}, {max(s+0.5, e-0.5):.2f});')
+
+        elif kind == "code":
+            body, lines = render_code(sc, i)
+            tl.append(f'      tl.from("#code{i}-win", {{ opacity: 0, scale: 0.96, duration: 0.5, ease: "power2.out" }}, {s+0.15:.2f})')
+            for j, lid in enumerate(lines):
+                tl.append(f'        .from("#{lid}", {{ opacity: 0, x: -14, duration: 0.22, ease: "power2.out" }}, {s+0.55+j*0.22:.2f})')
+            tl.append(f'        .to("#code{i}-caret", {{ opacity: 0, duration: 0.32, repeat: 8, yoyo: true, ease: "none" }}, {s+0.8:.2f})')
+            tl.append(f'        .to("#s{i+1}", {{ opacity: 0, duration: 0.4, ease: "power2.in" }}, {max(s+0.5, e-0.5):.2f});')
+
+        elif kind == "wave":
+            body, bars = render_wave(sc, i)
+            tl.append(f'      tl.from(".wave-title", {{ opacity: 0, y: 20, duration: 0.5, ease: "power2.out" }}, {s+0.15:.2f})')
+            tl.append(f'        .from(".wave-sub", {{ opacity: 0, duration: 0.5 }}, {s+0.3:.2f})')
+            for j, bid in enumerate(bars):
+                amp = 0.55 + 0.45 * ((j * 37 % 11) / 10)
+                tl.append(f'        .fromTo("#{bid}", {{ scaleY: 0.45 }}, {{ scaleY: {amp:.2f}, duration: 0.26, repeat: 18, yoyo: true, ease: "sine.inOut" }}, {s+0.25+j*0.012:.2f})')
+            tl.append(f'        .to("#s{i+1}", {{ opacity: 0, duration: 0.4, ease: "power2.in" }}, {max(s+0.5, e-0.5):.2f});')
+
+        elif kind == "block":
+            src = sc.get("src", "")
+            if not (ROOT / src).exists():
+                raise SystemExit(f"组件不存在：{src}")
+            body = (f'        <template data-composition-src="{src}"\n'
+                    f'                  data-start="0" data-duration="{e - s:.2f}"></template>')
+            tl.append(f'        .to("#s{i+1}", {{ opacity: 0, duration: 0.3, ease: "power2.in" }}, {max(s+0.4, e-0.4):.2f});')
 
         elif kind == "video":
             if not media_url:
