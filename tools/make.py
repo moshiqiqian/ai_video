@@ -49,6 +49,55 @@ def render_block(name: str, **kw) -> str:
     return tpl
 
 
+PPT = TPL / "ppt"
+
+
+def render_ppt(blocks: list, idx: int):
+    """渲染 PPT 风格的多块版式，返回 (html, [(block_id, order)])。"""
+    parts, anim = [], []
+    for j, b in enumerate(blocks):
+        name = b.get("block")
+        bid = f"ppt{idx}_{j}"
+        path = PPT / f"{name}.html"
+        if not path.exists():
+            raise SystemExit(f"未知的 ppt 块：{name}（templates/ppt/ 下没有）")
+        html = path.read_text(encoding="utf-8")
+
+        if name == "masthead":
+            html = (html.replace("{{brand}}", esc(b.get("brand", "")))
+                        .replace("{{sub}}", esc(b.get("sub", "")))
+                        .replace("{{issue}}", esc(b.get("issue", ""))))
+        elif name == "headline":
+            html = (html.replace("{{text}}", esc(b.get("text", "")))
+                        .replace("{{deck}}", esc(b.get("deck", ""))))
+        elif name == "cards":
+            cards = "".join(
+                f'<div class="ppt-card"><h3>{esc(c.get("t", ""))}</h3>'
+                f'<p>{esc(c.get("d", ""))}</p></div>'
+                for c in b.get("items", []))
+            html = html.replace("{{cards}}", cards)
+        elif name == "stats":
+            items = "".join(
+                f'<div class="ppt-stat"><b>{esc(str(it.get("n", "")))}</b>'
+                f'<span>{esc(it.get("l", ""))}</span></div>'
+                for it in b.get("items", []))
+            html = html.replace("{{items}}", items)
+        elif name == "pipeline":
+            segs = []
+            for k, s in enumerate(b.get("steps", [])):
+                if k:
+                    segs.append('<span class="ppt-arrow">→</span>')
+                segs.append(f'<div class="ppt-step"><i>{k + 1:02d}</i>'
+                            f'<strong>{esc(s)}</strong></div>')
+            html = html.replace("{{items}}", "".join(segs))
+        elif name == "band":
+            html = html.replace("{{text}}", esc(b.get("text", "")))
+
+        parts.append(html.replace("{{id}}", bid))
+        anim.append((bid, j))
+    return "\n".join(parts), anim
+
+
 def resolve_theme(name: str = None, overrides: dict = None) -> dict:
     """返回主题字典，支持覆盖单项颜色。"""
     preset = THEMES.get(name or DEFAULT_THEME, THEMES[DEFAULT_THEME])
@@ -392,6 +441,13 @@ def build_html(scenes, bounds, audio_rel, total, width, height, cues=None, media
             if cap:
                 tl.append(f'        .from("#cap{i}", {{ opacity: 0, duration: 0.45, ease: "power2.out" }}, {s+0.55:.2f})')
             tl.append(f'        .to("#s{i+1}", {{ opacity: 0, duration: 0.35, ease: "power2.in" }}, {max(s+0.3, e-0.4):.2f});')
+
+        elif kind == "editorial":
+            body, anim = render_ppt(sc.get("blocks", []), i)
+            body = f'        <div class="ppt">\n{body}\n        </div>'
+            for bid, j in anim:
+                tl.append(f'      tl.from("#{bid}", {{ opacity: 0, y: 26, duration: 0.5, ease: "power2.out" }}, {s + 0.2 + j * 0.35:.2f})')
+            tl.append(f'        .to("#s{i+1}", {{ opacity: 0, duration: 0.4, ease: "power2.in" }}, {max(s + 0.4, e - 0.45):.2f});')
 
         elif kind == "video":
             if not media_url:

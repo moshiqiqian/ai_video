@@ -35,3 +35,29 @@
         padding: 8px 26px; border-radius: 12px;
         background: %(SUB_BG)s;
       }
+
+
+      /* ---------- PPT / 编辑排版 ---------- */
+      .ppt { position: absolute; inset: 0; padding: 72px 96px 230px; display: flex; flex-direction: column; }
+      .ppt-block { opacity: 1; }
+      .ppt-masthead { display: flex; align-items: center; gap: 14px; padding-bottom: 14px; border-bottom: 2px solid %(INK)s; }
+      .ppt-logo { width: 26px; height: 26px; background: %(ACCENT)s; }
+      .ppt-brand { font-size: 22px; font-weight: 700; letter-spacing: .18em; }
+      .ppt-sub { font-size: 14px; letter-spacing: .22em; color: %(MUTED)s; text-transform: uppercase; }
+      .ppt-issue { margin-left: auto; font-size: 15px; letter-spacing: .12em; color: %(MUTED)s; border: 1px solid %(MUTED)s; padding: 4px 10px; }
+      .ppt-headline { margin-top: 34px; font-size: 76px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+      .ppt-rule { width: 96px; height: 5px; background: %(ACCENT)s; margin: 18px auto 14px; }
+      .ppt-deck { font-size: 30px; color: %(MUTED)s; line-height: 1.5; }
+      .ppt-cards { display: flex; gap: 18px; margin-top: 60px; justify-content: center; }
+      .ppt-card { flex: 1; border: 2px solid %(INK)s; background: rgba(255,255,255,.55); padding: 22px 24px; }
+      .ppt-card h3 { font-size: 30px; margin-bottom: 10px; }
+      .ppt-card p { font-size: 20px; color: %(MUTED)s; line-height: 1.45; }
+      .ppt-stats { display: flex; gap: 64px; margin-top: 110px; justify-content: center; }
+      .ppt-stat b { display: block; font-size: 96px; line-height: 1; color: %(ACCENT)s; font-weight: 800; }
+      .ppt-stat span { font-size: 20px; color: %(MUTED)s; letter-spacing: .08em; }
+      .ppt-pipeline { display: flex; align-items: stretch; gap: 10px; margin-top: 90px; }
+      .ppt-step { flex: 1; border-top: 4px solid %(ACCENT)s; padding-top: 12px; }
+      .ppt-step i { font-style: normal; font-size: 14px; letter-spacing: .2em; color: %(MUTED)s; }
+      .ppt-step strong { display: block; font-size: 26px; margin-top: 6px; }
+      .ppt-arrow { align-self: center; font-size: 26px; color: %(ACCENT)s; }
+      .ppt-band { margin-top: auto; border-left: 6px solid %(ACCENT)s; padding: 14px 20px; background: rgba(0,0,0,.06); font-size: 24px; }
